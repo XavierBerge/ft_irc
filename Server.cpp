@@ -9,9 +9,10 @@
 #include <cstdio>
 #include <cerrno>
 #include <sstream>
+#include <ctime>
 
 
-Server::Server(int port, const std::string &password) : password(password)
+Server::Server(int port, const std::string &password) : password(password), hostname("client.host"), servername("irc.tower.com")
 {
     // AF_INET = IPv4 , SOCK_STREAM = TCP
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -177,6 +178,44 @@ void Server::close_connection(int client_fd)
     clients.erase(client_fd);
 }
 
+void Server::send_welcome_messages(Client *client)
+{
+    std::string nickname = client->getNickname();
+    std::string username = client->getUsername();
+    std::string realname = client->getRealname();
+    std::string hostname = this->hostname;
+    std::string servername = this->servername;
+    
+    std::string response = "001 " + nickname + " :Welcome to the Internet Relay Network " +
+                           nickname + "!" + username + "@" + hostname + "\r\n";
+    client->sendToClient(response);
+
+    response = "002 " + nickname + " :Your host is " + servername + ", running version 1.0\r\n";
+    client->sendToClient(response);
+
+    std::time_t now = std::time(NULL);
+    std::tm* local_time = std::localtime(&now);
+
+    char date_str[100];
+    std::strftime(date_str, sizeof(date_str), "%a %b %d %Y at %H:%M", local_time);
+
+    response = "003 " + nickname + " :This server was created " + date_str + "\r\n";
+    client->sendToClient(response);
+
+    response = "004 " + nickname + " " + servername + " 1.0 iowghraAsORTVSx \r\n";
+    client->sendToClient(response);
+
+    response = "375 " + nickname + " :- " + servername + " Message of the day -\r\n";
+    client->sendToClient(response);
+
+    response = "372 " + nickname + " :- Welcome to the Tower IRC server!\r\n";
+    client->sendToClient(response);
+
+    response = "376 " + nickname + " :End of /MOTD command\r\n";
+    client->sendToClient(response);
+}
+
+
 void Server::handle_authentication(int client_fd, const std::string& data) 
 {
     Client *client = clients[client_fd];
@@ -264,25 +303,28 @@ void Server::handle_authentication(int client_fd, const std::string& data)
 				send(client_fd, error.c_str(), error.size(), 0);
 				continue;
 			}
-            std::cout << "USER accepted for " << client->getNickname() << std::endl;
-            client->authenticate();  
-            
-            std::string response = "001 " + client->getNickname() + " :Bienvenue sur le serveur IRC!\r\n";
-            send(client_fd, response.c_str(), response.size(), 0);
-            response = "002 " + client->getNickname() + " :Votre hôte est localhost, version 1.0\r\n";
-            send(client_fd, response.c_str(), response.size(), 0);
-            response = "003 " + client->getNickname() + " :Ce serveur a été créé aujourd'hui\r\n";
-            send(client_fd, response.c_str(), response.size(), 0);
-            response = "004 " + client->getNickname() + " localhost 1.0 iowghraAsORTVSx\r\n";
-            send(client_fd, response.c_str(), response.size(), 0);
-            response = "375 " + client->getNickname() + " :- Message du jour -\r\n";
-            send(client_fd, response.c_str(), response.size(), 0);
-            response = "372 " + client->getNickname() + " :- Bienvenue sur ce serveur IRC !\r\n";
-            send(client_fd, response.c_str(), response.size(), 0);
-            response = "376 " + client->getNickname() + " :Fin du message du jour\r\n";
-            send(client_fd, response.c_str(), response.size(), 0);
+    		std::istringstream iss(line);
+			std::string command;
+			
+			iss >> command;
+			std::string username, hostname, servername, realname;
 
-            std::cout << "Client " << client_fd << " authentified with success." << std::endl;
+			iss >> username >> hostname >> servername;
+
+			std::getline(iss, realname);
+			if (!realname.empty() && realname[0] == ':')
+				realname = realname.substr(1);
+			if (username.empty() || hostname.empty() || servername.empty() || realname.empty())
+			{
+				std::string error = "461 " + client->getNickname() + " USER :Not enough parameters\r\n";
+				send(client_fd, error.c_str(), error.size(), 0);
+				continue;
+			}
+
+			client->setUsername(username);
+    		client->setRealname(realname);
+            client->authenticate();
+			send_welcome_messages(client);
             return;
         }
         std::string response = "In authentification process PASS, NICK and USER must be defined, command : " + line + " is not valid.\r\n";
@@ -290,38 +332,7 @@ void Server::handle_authentication(int client_fd, const std::string& data)
     }
 }
 
-/*
-void Server::send_welcome_message(int client_fd, const Client& client)
-{
-    std::string host = "localhost";  // Ou autre nom d'hôte du serveur
-    std::string nick = client.getNickname();
-    std::string user = client.getUsername();
 
-    // RPL_WELCOME
-    std::string welcomeMessage = ":" + host + " 001 " + nick + " :Welcome to the Internet Relay Network " + nick + "!" + user + "@localhost\r\n";
-    send(client_fd, welcomeMessage.c_str(), welcomeMessage.size(), 0);
-
-    // RPL_YOURHOST
-    welcomeMessage = ":" + host + " 002 " + nick + " :Your host is localhost, running version 1.0\r\n";
-    send(client_fd, welcomeMessage.c_str(), welcomeMessage.size(), 0);
-
-    // RPL_CREATED
-    welcomeMessage = ":" + host + " 003 " + nick + " :This server was created on Oct 24, 2024\r\n";
-    send(client_fd, welcomeMessage.c_str(), welcomeMessage.size(), 0);
-
-    // RPL_MYINFO
-    welcomeMessage = ":" + host + " 004 " + nick + " localhost 1.0 iowghraAsORTVSx NC\r\n";
-    send(client_fd, welcomeMessage.c_str(), welcomeMessage.size(), 0);
-
-    // RPL_MOTDSTART, RPL_MOTD, RPL_ENDOFMOTD (Message of the Day)
-    welcomeMessage = ":" + host + " 375 " + nick + " :- Message of the day -\r\n";
-    send(client_fd, welcomeMessage.c_str(), welcomeMessage.size(), 0);
-    welcomeMessage = ":" + host + " 372 " + nick + " :- Welcome to this IRC server!\r\n";
-    send(client_fd, welcomeMessage.c_str(), welcomeMessage.size(), 0);
-    welcomeMessage = ":" + host + " 376 " + nick + " :End of /MOTD command\r\n";
-    send(client_fd, welcomeMessage.c_str(), welcomeMessage.size(), 0);
-}
-*/
 
 
 void Server::handle_client_data(int client_fd) 

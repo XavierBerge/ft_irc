@@ -10,6 +10,7 @@ class Client
 		int socket_fd;
 		std::string nickname;
 		std::string username;
+		std::string realname;
 		bool authenticated;
 		bool irssi;
 		bool pass_ok;
@@ -26,6 +27,9 @@ class Client
 
 		void setUsername(const std::string& user);
 		std::string getUsername() const;
+
+		void setRealname(const std::string& name);
+		std::string getRealname() const;
 
 		bool isAuthenticated() const;
 		void authenticate();

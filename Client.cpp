@@ -36,9 +36,18 @@ std::string Client::getUsername() const
     return username;
 }
 
+void Client::setRealname(const std::string& name) 
+{
+    realname = name;
+}
+
 bool Client::isAuthenticated() const 
 {
     return authenticated;
+}
+std::string Client::getRealname() const
+{
+	return realname;
 }
 
 bool Client::isIrssi() const
