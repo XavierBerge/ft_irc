@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include <cstdlib>
 #include <iostream>
+#include <signal.h>
 
 int main(int argc, char* argv[]) 
 {
@@ -17,6 +18,8 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
     std::string password = argv[2];
+	signal(SIGINT, Server::SignalHandler);
+	signal(SIGQUIT, Server::SignalHandler);
     Server server(port, password);
     server.run();
     return EXIT_SUCCESS;

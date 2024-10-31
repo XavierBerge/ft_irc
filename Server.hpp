@@ -17,6 +17,7 @@ class Server
 		std::string password;
 		std::string hostname;
 		std::string servername;
+		static bool Signal;
 
 		// Méthodes privées
 		void add_poll_fd(int fd, short events);
@@ -28,14 +29,10 @@ class Server
 		void send_welcome_messages(Client  *client);
 
 	public:
-		// Constructeur
 		Server(int port, const std::string& password);
-
-		// Destructeur
 		~Server();
-
-		// Méthode principale pour exécuter le serveur
 		void run();
+		static void	SignalHandler(int signum);
 };
 
 #endif

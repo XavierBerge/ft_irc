@@ -11,6 +11,7 @@
 #include <sstream>
 #include <ctime>
 
+ bool Server::Signal = false;
 
 Server::Server(int port, const std::string &password) : password(password), hostname("client.host"), servername("irc.tower.com")
 {
@@ -57,12 +58,17 @@ Server::Server(int port, const std::string &password) : password(password), host
     add_poll_fd(server_fd, POLLIN);
 }
 
-Server::~Server()
+Server::~Server() 
 {
-    close(server_fd);
-    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it)
+    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
+        close(it->first);
         delete it->second;
+    }
+    clients.clear();
+    if (server_fd >= 0) 
+        close(server_fd);
 }
+
 // ajoute fd a poll_fds
 void Server::add_poll_fd(int fd, short events)
 {
@@ -87,40 +93,68 @@ void Server::remove_poll_fd(int fd)
 // Boucle principale du serveur 
 void Server::run()
 {
-    while (true)
+    while (!Server::Signal)  // Boucle tant qu'aucun signal d'arrêt n'est capté
     {
-        // tableau statique avec &poll_fds[0] au lieu de vector, taille tableau, -1 pour attendre a l'infini
+        // Appel à poll, vérification de la taille et gestion des signaux
         int poll_count = poll(&poll_fds[0], poll_fds.size(), -1);
 
-        if (poll_count < 0)
-        {
-            perror("poll");
-            exit(EXIT_FAILURE);
-        }
-        // Verification si un evenement a lieu pour chacun des fds 
-        for (size_t i = 0; i < poll_fds.size(); ++i)
-        {
-            // Verification des evenements de lecture
-            if(poll_fds[i].revents & POLLIN)
-            {
-                if (poll_fds[i].fd == server_fd)
-                    handle_new_connection();
-                else
-                    handle_client_data(poll_fds[i].fd);
+        if (poll_count < 0) 
+		{
+            if (errno == EINTR) 
+			{
+                // Si poll est interrompu par un signal, sortir de la boucle
+                break;
+            } else 
+			{
+                perror("poll");
+                exit(EXIT_FAILURE);
             }
-        
-            // Verification des erreurs 
-            if (poll_fds[i].revents & (POLLHUP | POLLERR |POLLNVAL))
-            {
-                if (poll_fds[i].fd != server_fd)
-                {
+        }
+
+        // Parcours des descripteurs pour vérifier les événements
+        for (size_t i = 0; i < poll_fds.size(); ++i) 
+		{
+            // Gestion des événements de lecture
+            if (poll_fds[i].revents & POLLIN) 
+			{
+                if (poll_fds[i].fd == server_fd)
+                    handle_new_connection();  // Gère une nouvelle connexion au serveur
+                else
+                    handle_client_data(poll_fds[i].fd);  // Gère les données d'un client existant
+            }
+
+            // Gestion des erreurs et des déconnexions
+            if (poll_fds[i].revents & (POLLHUP | POLLERR | POLLNVAL)) 
+			{
+                if (poll_fds[i].fd != server_fd) 
+				{
                     std::cout << "Deconnexion ou erreur sur le client " << poll_fds[i].fd << std::endl;
-                    close_connection(poll_fds[i].fd);
+                    close_connection(poll_fds[i].fd);  // Ferme la connexion du client en cas d'erreur
                 }
             }
         }
     }
+
+    // Nettoyage des ressources après réception d'un signal d'arrêt
+    std::cout << "\nSignal d'arrêt reçu. Fermeture des connexions." << std::endl;
+
+    // Fermer tous les sockets des clients et libérer la mémoire associée
+    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
+	{
+        close(it->first); // Ferme le descripteur de fichier du client
+        delete it->second; // Libère la mémoire associée à chaque objet Client
+    }
+    clients.clear(); // Vider la map des clients
+
+    // Fermer le socket du serveur si toujours ouvert
+    if (server_fd >= 0) 
+	{
+        close(server_fd);
+    }
+
+    std::cout << "Serveur arrêté proprement." << std::endl;
 }
+
 // Nouvelle connexion d'un client
 void Server::handle_new_connection()
 {
@@ -376,6 +410,12 @@ void Server::handle_client_data(int client_fd)
         }
 
     }
+}
+
+void Server::SignalHandler(int signum)
+{
+	(void)signum;
+	Server::Signal = true;
 }
 
 
