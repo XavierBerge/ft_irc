@@ -1,15 +1,16 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Server.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/03 13:11:00 by xav               #+#    #+#             */
+/*   Updated: 2024/11/03 13:11:01 by xav              ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "Server.hpp"
-#include <iostream>
-#include <cstring>
-#include <cstdlib>
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <cstdio>
-#include <cerrno>
-#include <sstream>
-#include <ctime>
 
  bool Server::Signal = false;
 
@@ -135,9 +136,6 @@ void Server::run()
         }
     }
 
-    // Nettoyage des ressources après réception d'un signal d'arrêt
-    std::cout << "\nSignal d'arrêt reçu. Fermeture des connexions." << std::endl;
-
     // Fermer tous les sockets des clients et libérer la mémoire associée
     for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
 	{
@@ -152,12 +150,29 @@ void Server::run()
         close(server_fd);
     }
 
-    std::cout << "Serveur arrêté proprement." << std::endl;
+    std::cout << "Signal received." << std::endl;
 }
 
 // Nouvelle connexion d'un client
 void Server::handle_new_connection()
 {
+    // Vérification si la limite de connexions est atteinte
+    if (clients.size() >= MAX_CLIENTS)
+    {
+        // Accepter temporairement la connexion pour envoyer un message de refus
+        struct sockaddr_in client_addr;
+        socklen_t client_len = sizeof(client_addr);
+        int temp_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+
+        if (temp_fd >= 0) 
+        {
+            std::string full_message = "Server is full. Connection refused.\r\n";
+            send(temp_fd, full_message.c_str(), full_message.size(), 0);
+            close(temp_fd); // Fermer immédiatement le descripteur
+        }
+        return; // Retourner sans ajouter de client
+    }
+
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
     int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
@@ -170,7 +185,7 @@ void Server::handle_new_connection()
     }
 
     // Utilisation de inet_ntoa() pour obtenir l'adresse IP du client
-   std::cout << "\033[1;32m"
+    std::cout << "\033[1;32m"
               << "New connection accepted : " << client_fd 
               << " from " << inet_ntoa(client_addr.sin_addr) 
               << ":" << ntohs(client_addr.sin_port)
@@ -201,6 +216,7 @@ void Server::handle_new_connection()
         return;
     }
 }
+
 
 
 
@@ -346,8 +362,12 @@ void Server::handle_authentication(int client_fd, const std::string& data)
 			iss >> username >> hostname >> servername;
 
 			std::getline(iss, realname);
+			
+			realname.erase(0, realname.find_first_not_of(" \t"));
+    		realname.erase(realname.find_last_not_of(" \t") + 1);
 			if (!realname.empty() && realname[0] == ':')
 				realname = realname.substr(1);
+			
 			if (username.empty() || hostname.empty() || servername.empty() || realname.empty())
 			{
 				std::string error = "461 " + client->getNickname() + " USER :Not enough parameters\r\n";

@@ -1,7 +1,17 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Client.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/03 13:10:45 by xav               #+#    #+#             */
+/*   Updated: 2024/11/03 13:10:46 by xav              ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "Client.hpp"
-#include <iostream>
-#include <cstring>
-#include <sys/socket.h>
+
 
 Client::Client(int fd) : socket_fd(fd), authenticated(false), irssi(false), pass_ok(false), nick_ok(false) {}
 
@@ -103,14 +113,6 @@ void Client::handleCommand(const std::string& command)
         setNickname(new_nickname);
         std::cout << "Client " << socket_fd << " a défini son nickname à : " << new_nickname << std::endl;
         sendToClient("Nickname défini à " + new_nickname + "\n");
-    }
-    else if (command.find("USER") == 0) 
-    {
-        std::string new_username = command.substr(5);  // Récupérer l'username après "USER "
-        setUsername(new_username);
-        authenticate();
-        std::cout << "Client " << socket_fd << " est maintenant authentifié avec username : " << new_username << std::endl;
-        sendToClient("Authentifié en tant que " + new_username + "\n");
     }
     else if (command.find("QUIT") == 0) 
     {

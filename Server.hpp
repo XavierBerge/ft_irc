@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Server.hpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/03 13:11:04 by xav               #+#    #+#             */
+/*   Updated: 2024/11/03 13:11:05 by xav              ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
@@ -5,6 +17,19 @@
 #include <map>
 #include <vector>
 #include <poll.h>
+#include <iostream>
+#include <cstring>
+#include <cstdlib>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <cstdio>
+#include <cerrno>
+#include <sstream>
+#include <ctime>
+
+#define MAX_CLIENTS 10
 
 class Client;
 

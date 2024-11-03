@@ -1,8 +1,23 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Client.hpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/03 13:10:50 by xav               #+#    #+#             */
+/*   Updated: 2024/11/03 13:10:51 by xav              ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
 #include <string>
 #include <unistd.h>
+#include <iostream>
+#include <cstring>
+#include <sys/socket.h>
 
 class Client 
 {
