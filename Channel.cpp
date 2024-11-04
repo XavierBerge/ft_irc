@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:14 by xav               #+#    #+#             */
-/*   Updated: 2024/11/04 09:44:47 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/04 15:45:09 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,8 @@
 #include <iostream>
 
 
-Channel::Channel(const std::string &channelName, Server& server) 
-    : name(channelName), serverInstance(server) {}
+Channel::Channel(const std::string &channelName) 
+    : name(channelName){}
 
 
 Channel::~Channel() 
@@ -56,22 +56,29 @@ bool Channel::isOperator(int client_fd) const
 {
     return operators.find(client_fd) != operators.end() && operators.at(client_fd);
 }
-
+/*
 void Channel::promoteToOperator(int client_fd) 
 {
-    if (isClientInChannel(client_fd)) 
+    if (isClientInChannel(target_fd)) 
     {
-        operators[client_fd] = true;
-        std::string nickname = serverInstance.getNicknameByFd(client_fd);  // Récupère le pseudo
-        std::string modeMessage = ":" + nickname + " MODE " + name + " +o " + nickname + "\r\n";
+        operators[target_fd] = true;
 
-        // Envoie le message à tous les clients du channel
+        // Obtenez les nicknames pour l'affichage
+       // std::string target_nickname = serverInstance.getNicknameByFd(target_fd);
+       // std::string promoter_nickname = serverInstance.getNicknameByFd(promoter_fd);
+
+        // Préparez le message de mode
+        std::string modeMessage = ":" + promoter_nickname + " MODE " + name + " +o " + target_nickname + "\r\n";
+
+        // Envoyez le message à tous les clients du channel
         for (std::set<int>::iterator it = clients.begin(); it != clients.end(); ++it) 
         {
             send(*it, modeMessage.c_str(), modeMessage.size(), 0);
         }
     }
 }
+*/
+
 
 
 void Channel::broadcastMessage(const std::string &message, int sender_fd) 

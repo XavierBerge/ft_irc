@@ -6,13 +6,27 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:00 by xav               #+#    #+#             */
-/*   Updated: 2024/11/03 17:56:03 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/04 22:32:15 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
  bool Server::Signal = false;
+
+void Server::initializeCommandMap() 
+{
+    commandMap["JOIN"] = &Server::handleJoin;
+    commandMap["PRIVMSG"] = &Server::handlePrivmsg;
+    commandMap["KICK"] = &Server::handleKick;
+    commandMap["INVITE"] = &Server::handleInvite;
+    commandMap["TOPIC"] = &Server::handleTopic;
+    commandMap["NICK"] = &Server::handleNick;
+    commandMap["MODE"] = &Server::handleMode;
+    commandMap["PART"] = &Server::handlePart;
+    commandMap["QUIT"] = &Server::handleQuit;
+    commandMap["PING"] = &Server::handlePing;
+}
 
 Server::Server(int port, const std::string &password) : password(password), hostname("client.host"), servername("irc.tower.com")
 {
@@ -57,6 +71,7 @@ Server::Server(int port, const std::string &password) : password(password), host
     }
     // Ajout du socket a poll_fds en 3(0 = stdin, 1 = stdout, 2 = stderr)
     add_poll_fd(server_fd, POLLIN);
+	initializeCommandMap();
 }
 
 Server::~Server() 
@@ -100,11 +115,118 @@ void Server::remove_poll_fd(int fd)
     }
 }
 
-std::string Server::getNicknameByFd(int client_fd) 
+void Server::handleJoin(int client_fd, const std::string& command) 
 {
-    if (clients.find(client_fd) != clients.end()) 
-        return clients[client_fd]->getNickname();
-    return "";
+	(void) client_fd;
+    std::cout << "handleJoin called with command: "  << command << std::endl;
+}
+
+void Server::handlePrivmsg(int client_fd, const std::string& command) 
+{
+	(void) client_fd;
+    std::cout << "handlePrivmsg called with command: " << command << std::endl;
+}
+
+void Server::handleKick(int client_fd, const std::string& command) 
+{
+	(void) client_fd;
+    std::cout << "handleKick called with command: " << command << std::endl;
+}
+
+void Server::handleInvite(int client_fd, const std::string& command) 
+{
+	(void) client_fd;
+    std::cout << "handleInvite called with command: " << command << std::endl;
+}
+
+void Server::handleTopic(int client_fd, const std::string& command) 
+{
+	(void) client_fd;
+    std::cout << "handleTopic called with command: " << command << std::endl;
+}
+
+void Server::handleMode(int client_fd, const std::string& command) 
+{
+	(void) client_fd;
+    std::cout << "handleMode called with command: " << command << std::endl;
+}
+
+void Server::handlePart(int client_fd, const std::string& command) 
+{
+	(void) client_fd;
+    std::cout << "handlePart called with command: " << command << std::endl;
+}
+
+void Server::handlePing(int client_fd, const std::string& command) 
+{
+    std::string response = "PONG :";
+    std::string param = command.substr(5);  // Extraction du paramètre après "PING "
+    response += param + "\r\n";
+    send(client_fd, response.c_str(), response.size(), 0);
+}
+
+void Server::handleQuit(int client_fd, const std::string& command) 
+{
+	(void) command;
+    // Récupérer le client associé au client_fd
+    Client* client = clients[client_fd];
+
+    // Vérifier si le client existe et récupérer le nickname
+    std::string nickname = (client && client->isNick_Ok()) ? client->getNickname() : "Unknown";
+
+    // Afficher le message de déconnexion avec le nickname
+    std::cout << "Client " << nickname << " has quit the server.\n";
+
+    // Supprimer le client de la map et fermer la connexion
+    close_connection(client_fd);
+}
+
+
+void Server::handleNick(int client_fd, const std::string& command) 
+{
+    Client* client = clients[client_fd];
+
+
+    // Vérifier si le client a passé le mot de passe
+    if (!client->isPass_Ok()) 
+	{
+        std::string error = "You must enter the server password before choosing a nickname : PASS <password>.\r\n";
+        send(client_fd, error.c_str(), error.size(), 0);
+        return;
+    }
+
+    // Récupérer le nickname depuis la commande
+    std::string nickname = command.substr(5);
+
+    // Vérifier l'unicité du nickname
+    bool nickname_taken = false;
+    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
+	{
+        if (it->second->getNickname() == nickname) 
+		{
+            nickname_taken = true;
+            break;
+        }
+    }
+
+    if (nickname_taken) 
+	{
+        std::string response = "433 * " + nickname + " :This nickname is already taken. Please choose a different nickname.\r\n";
+        send(client_fd, response.c_str(), response.size(), 0);
+        return;
+    }
+
+    // Définir le nickname s'il est unique
+    client->setNickname(nickname);
+	if (!client->isAuthenticated())
+	{
+		if (!client->isIrssi()) 
+		{
+			std::string response = nickname + " :NICK accepted. Please enter a username: USER <username> <hostname> <servername> :<realname>\r\n";
+			send(client_fd, response.c_str(), response.size(), 0);
+		}
+		client->nick_true();
+	}
 }
 
 // Boucle principale du serveur 
@@ -174,71 +296,7 @@ void Server::run()
 
     std::cout << "\nSignal received." << std::endl;
 }
-
-// Nouvelle connexion d'un client
-void Server::handle_new_connection()
-{
-    // Vérification si la limite de connexions est atteinte
-    if (clients.size() >= MAX_CLIENTS)
-    {
-        // Accepter temporairement la connexion pour envoyer un message de refus
-        struct sockaddr_in client_addr;
-        socklen_t client_len = sizeof(client_addr);
-        int temp_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
-
-        if (temp_fd >= 0) 
-        {
-            std::string full_message = "Server is full. Connection refused.\r\n";
-            send(temp_fd, full_message.c_str(), full_message.size(), 0);
-            close(temp_fd); // Fermer immédiatement le descripteur
-        }
-        return; // Retourner sans ajouter de client
-    }
-
-    struct sockaddr_in client_addr;
-    socklen_t client_len = sizeof(client_addr);
-    int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
-
-    if (client_fd < 0)
-    {
-        if (errno != EWOULDBLOCK && errno != EAGAIN)
-            perror("accept");
-        return; 
-    }
-
-    // Utilisation de inet_ntoa() pour obtenir l'adresse IP du client
-    std::cout << "\033[1;32m"
-              << "New connection accepted : " << client_fd 
-              << " from " << inet_ntoa(client_addr.sin_addr) 
-              << ":" << ntohs(client_addr.sin_port)
-              << "\033[0m"
-              << std::endl;
-
-    // Rendre le socket client non-bloquant
-    if (fcntl(client_fd, F_SETFL, O_NONBLOCK) < 0)
-    {
-        perror("fcntl");
-        close(client_fd);
-        return; 
-    }
-
-    // Ajouter le client dans la liste des clients connectés
-    Client *new_client = new Client(client_fd, this);
-    clients[client_fd] = new_client;
-
-    // Ajouter le descripteur du client à poll() pour surveiller les événements d'E/S
-    add_poll_fd(client_fd, POLLIN);
-
-    // Envoyer un message de demande de mot de passe au client
-    std::string welcome_message = "Please enter the server password to get access : PASS <password>\r\n";
-    if (send(client_fd, welcome_message.c_str(), welcome_message.size(), 0) < 0)
-    {
-        perror("send");
-        close_connection(client_fd); // Fermer si l'envoi échoue
-        return;
-    }
-}
-
+/*
 void Server::handleJoinCommand(int client_fd, const std::string &channelName) 
 {
     if (channelName.empty()) 
@@ -269,6 +327,7 @@ void Server::handleJoinCommand(int client_fd, const std::string &channelName)
         clients[client_fd]->sendToClient("Vous êtes déjà dans " + channelName + "\r\n");
     }
 }
+*/
 
 void Server::close_connection(int client_fd)
 {
@@ -277,166 +336,6 @@ void Server::close_connection(int client_fd)
     delete clients[client_fd];
     clients.erase(client_fd);
 }
-
-void Server::send_welcome_messages(Client *client)
-{
-    std::string nickname = client->getNickname();
-    std::string username = client->getUsername();
-    std::string realname = client->getRealname();
-    std::string hostname = this->hostname;
-    std::string servername = this->servername;
-    
-    std::string response = "001 " + nickname + " :Welcome to the Internet Relay Network " +
-                           nickname + "!" + username + "@" + hostname + "\r\n";
-    client->sendToClient(response);
-
-    response = "002 " + nickname + " :Your host is " + servername + ", running version 1.0\r\n";
-    client->sendToClient(response);
-
-    std::time_t now = std::time(NULL);
-    std::tm* local_time = std::localtime(&now);
-
-    char date_str[100];
-    std::strftime(date_str, sizeof(date_str), "%a %b %d %Y at %H:%M", local_time);
-
-    response = "003 " + nickname + " :This server was created " + date_str + "\r\n";
-    client->sendToClient(response);
-
-    response = "004 " + nickname + " " + servername + " 1.0 iowghraAsORTVSx \r\n";
-    client->sendToClient(response);
-
-    response = "375 " + nickname + " :- " + servername + " Message of the day -\r\n";
-    client->sendToClient(response);
-
-    response = "372 " + nickname + " :- Welcome to the Tower IRC server!\r\n";
-    client->sendToClient(response);
-
-    response = "376 " + nickname + " :End of /MOTD command\r\n";
-    client->sendToClient(response);
-}
-
-
-void Server::handle_authentication(int client_fd, const std::string& data) 
-{
-    Client *client = clients[client_fd];
-    std::stringstream ss(data);
-    std::string line;
-    
-    while (std::getline(ss, line)) 
-    {
-        if (!line.empty() && line[line.size() - 1] == '\r') 
-            line.erase(line.size() - 1);
-
-        std::cout << "Received command : " << line << std::endl;
-
-        if (line.find("CAP LS") == 0) 
-		{
-			client->irssi_true();
-            continue;
-        }
-
-        if (line.find("PASS ") == 0) 
-        {
-            std::string client_pass = line.substr(5);
-            if (client_pass == password) 
-            {
-				if (!client->isIrssi())
-				{
-					std::string response = "Correct password. Please enter your nickname : NICK <nickname>.\r\n";
-					send(client_fd, response.c_str(), response.size(), 0);
-				}
-            } 
-            else 
-            {
-                std::cout << "Wrong password. Try to reconnect with the correct password\r\n";
-                close_connection(client_fd);
-                return;
-            }
-			client->pass_true();
-            continue;
-        }
-
-        if (line.find("NICK ") == 0) 
-		{
-			if (!client->isPass_Ok())
-			{
-				std::string error = "You must enter the server password before choosing a nickname : PASS <password>.\r\n";
-				send(client_fd, error.c_str(), error.size(), 0);
-				continue;
-			}
-            std::string nickname = line.substr(5);
-
-            // Vérifier l'unicité du nickname
-            bool nickname_taken = false;
-            for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
-			{
-                if (it->second->getNickname() == nickname) 
-				{
-                    nickname_taken = true;
-                    break;
-                }
-            }
-
-            if (nickname_taken) 
-			{
-                std::string response = "433 * " + nickname + " :This nickname is already taken. Please choose a different nickname.\r\n";
-                send(client_fd, response.c_str(), response.size(), 0);
-                continue;
-            }
-
-            // Si le nickname est unique, on le définit
-            client->setNickname(nickname);
-			if (!client->isIrssi())
-			{
-				std::string response = nickname + " :NICK accepted. Please enter a username: USER <username> <hostname> <servername> :<realname>\r\n";
-				send(client_fd, response.c_str(), response.size(), 0);
-			}
-			client->nick_true();
-            continue;
-        }
-
-        if (line.find("USER ") == 0) 
-		{
-			if (!client->isNick_Ok())
-			{
-				std::string error = "Please first define your nickname : NICK <nickname>.\r\n";
-				send(client_fd, error.c_str(), error.size(), 0);
-				continue;
-			}
-    		std::istringstream iss(line);
-			std::string command;
-			
-			iss >> command;
-			std::string username, hostname, servername, realname;
-
-			iss >> username >> hostname >> servername;
-
-			std::getline(iss, realname);
-			
-			realname.erase(0, realname.find_first_not_of(" \t"));
-    		realname.erase(realname.find_last_not_of(" \t") + 1);
-			if (!realname.empty() && realname[0] == ':')
-				realname = realname.substr(1);
-			
-			if (username.empty() || hostname.empty() || servername.empty() || realname.empty())
-			{
-				std::string error = "461 " + client->getNickname() + " USER :Not enough parameters\r\n";
-				send(client_fd, error.c_str(), error.size(), 0);
-				continue;
-			}
-
-			client->setUsername(username);
-    		client->setRealname(realname);
-            client->authenticate();
-			send_welcome_messages(client);
-            return;
-        }
-        std::string response = "In authentification process PASS, NICK and USER must be defined, command : " + line + " is not valid.\r\n";
-        send(client_fd, response.c_str(), response.size(), 0);
-    }
-}
-
-
 
 
 void Server::handle_client_data(int client_fd) 
@@ -465,15 +364,13 @@ void Server::handle_client_data(int client_fd)
         std::string command(buffer);
         command.erase(command.find_last_not_of("\r\n") + 1);  // Supprimer les éventuels caractères de nouvelle ligne
 
-        std::cout << "Received from client " << client_fd << ": " << command << std::endl;
-
         // Si le client n'est pas encore authentifié, gérer l'authentification
         if (!client->isAuthenticated()) 
             handle_authentication(client_fd, command);
         // Sinon, gérer les commandes classiques après authentification
         else 
 		{
-            client->handleCommand(command);
+            handleCommand(client_fd, command);
 
             if (command.find("/quit") == 0) 
                 close_connection(client_fd);

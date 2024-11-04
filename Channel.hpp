@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:39 by xav               #+#    #+#             */
-/*   Updated: 2024/11/03 17:55:04 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/04 15:45:23 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,10 +28,10 @@ class Channel
 		std::string name;
 		std::set<int> clients;
 		std::map<int, bool> operators;
-		Server& serverInstance;
+	
 
 	public:
-		Channel(const std::string &channelName, Server &server);
+		Channel(const std::string &channelName);
 		~Channel();
 
 		std::string getName() const;

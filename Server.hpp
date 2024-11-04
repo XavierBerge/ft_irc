@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:04 by xav               #+#    #+#             */
-/*   Updated: 2024/11/03 17:49:40 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/04 22:32:03 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,8 @@
 
 #define MAX_CLIENTS 10
 
+
+
 class Client;
 
 class Channel;
@@ -47,6 +49,8 @@ class Server
 		std::string hostname;
 		std::string servername;
 		static bool Signal;
+		typedef void (Server::*CommandHandler)(int, const std::string&);
+		std::map<std::string, CommandHandler> commandMap;
 
 		// Méthodes privées
 		void add_poll_fd(int fd, short events);
@@ -56,6 +60,7 @@ class Server
 		void close_connection(int client_fd);
 		void handle_authentication(int client_fd, const std::string& command);
 		void send_welcome_messages(Client  *client);
+		void initializeCommandMap();
 		
 
 	public:
@@ -63,8 +68,22 @@ class Server
 		~Server();
 		void run();
 		static void	SignalHandler(int signum);
-		void handleJoinCommand(int client_fd, const std::string &channelName);
-		std::string getNicknameByFd(int client_fd);
+
+
+
+		void handleCommand(int client_fd, const std::string& command);
+		void handleJoin(int client_fd, const std::string& command);
+		void handlePrivmsg(int client_fd, const std::string& command);
+		void handleKick(int client_fd, const std::string& command);
+		void handleInvite(int client_fd, const std::string& command);
+		void handleTopic(int client_fd, const std::string& command);
+		void handleNick(int client_fd, const std::string& command); // Déjà existante
+		void handleMode(int client_fd, const std::string& command);
+		void handlePart(int client_fd, const std::string& command);
+		void handleQuit(int client_fd, const std::string& command);
+		void handlePing(int client_fd, const std::string& command);
+
+
 };
 
 #endif

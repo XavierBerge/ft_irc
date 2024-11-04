@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:50 by xav               #+#    #+#             */
-/*   Updated: 2024/11/03 14:28:21 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/04 20:29:29 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,9 +60,10 @@ class Client
 		bool isNick_Ok() const;
 
 		ssize_t readFromClient(char *buffer, size_t size);
-		ssize_t sendToClient(const std::string& message);
+		void sendToClient(const std::string& message);
 
 		void handleCommand(const std::string& command);
+		void handleModeCommand(const std::string& command);
 	};
 
 #endif
