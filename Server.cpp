@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:00 by xav               #+#    #+#             */
-/*   Updated: 2024/11/03 13:11:01 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/03 17:56:03 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,13 +61,21 @@ Server::Server(int port, const std::string &password) : password(password), host
 
 Server::~Server() 
 {
-    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
+	for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) 
+	{
+    	delete it->second;
+	}
+	channels.clear();
+
+    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
+	{
         close(it->first);
         delete it->second;
     }
     clients.clear();
     if (server_fd >= 0) 
         close(server_fd);
+	
 }
 
 // ajoute fd a poll_fds
@@ -91,6 +99,14 @@ void Server::remove_poll_fd(int fd)
         }
     }
 }
+
+std::string Server::getNicknameByFd(int client_fd) 
+{
+    if (clients.find(client_fd) != clients.end()) 
+        return clients[client_fd]->getNickname();
+    return "";
+}
+
 // Boucle principale du serveur 
 void Server::run()
 {
@@ -135,6 +151,12 @@ void Server::run()
             }
         }
     }
+	
+	for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) 
+	{
+    	delete it->second;
+	}
+	channels.clear();
 
     // Fermer tous les sockets des clients et libérer la mémoire associée
     for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
@@ -150,7 +172,7 @@ void Server::run()
         close(server_fd);
     }
 
-    std::cout << "Signal received." << std::endl;
+    std::cout << "\nSignal received." << std::endl;
 }
 
 // Nouvelle connexion d'un client
@@ -201,7 +223,7 @@ void Server::handle_new_connection()
     }
 
     // Ajouter le client dans la liste des clients connectés
-    Client *new_client = new Client(client_fd);
+    Client *new_client = new Client(client_fd, this);
     clients[client_fd] = new_client;
 
     // Ajouter le descripteur du client à poll() pour surveiller les événements d'E/S
@@ -217,8 +239,36 @@ void Server::handle_new_connection()
     }
 }
 
+void Server::handleJoinCommand(int client_fd, const std::string &channelName) 
+{
+    if (channelName.empty()) 
+    {
+        clients[client_fd]->sendToClient("461 " + clients[client_fd]->getNickname() + " JOIN :Not enough parameters\r\n");
+        return;
+    }
+	bool first_to_join = false;
+    if (channels.find(channelName) == channels.end()) 
+    {
+        // Créer un nouveau channel s'il n'existe pas
+        channels[channelName] = new Channel(channelName, *this);
+        std::cout << "Channel " << channelName << " créé." << std::endl;
+		first_to_join = true;
+    }
 
-
+    Channel *channel = channels[channelName];
+    if (channel->addClient(client_fd)) 
+    {
+        std::string joinMessage = ":" + clients[client_fd]->getNickname() + " JOIN " + channelName + "\r\n";
+        channel->broadcastMessage(joinMessage, client_fd);
+        clients[client_fd]->sendToClient("Vous avez rejoint " + channelName + "\r\n");
+		if (first_to_join)
+			channel->promoteToOperator(client_fd);
+    } 
+    else 
+    {
+        clients[client_fd]->sendToClient("Vous êtes déjà dans " + channelName + "\r\n");
+    }
+}
 
 void Server::close_connection(int client_fd)
 {

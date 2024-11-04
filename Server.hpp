@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:04 by xav               #+#    #+#             */
-/*   Updated: 2024/11/03 13:11:05 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/03 17:49:40 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #define SERVER_HPP
 
 #include "Client.hpp"
+#include "Channel.hpp"
 #include <map>
 #include <vector>
 #include <poll.h>
@@ -33,12 +34,15 @@
 
 class Client;
 
+class Channel;
+
 class Server 
 {
 	private:
 		int server_fd;  // Socket du serveur
 		std::map<int, Client*> clients;  // Mapping des descripteurs de fichiers à chaque client
 		std::vector<struct pollfd> poll_fds;  // Liste des sockets surveillés par poll()
+		std::map<std::string, Channel*> channels;
 		std::string password;
 		std::string hostname;
 		std::string servername;
@@ -52,12 +56,15 @@ class Server
 		void close_connection(int client_fd);
 		void handle_authentication(int client_fd, const std::string& command);
 		void send_welcome_messages(Client  *client);
+		
 
 	public:
 		Server(int port, const std::string& password);
 		~Server();
 		void run();
 		static void	SignalHandler(int signum);
+		void handleJoinCommand(int client_fd, const std::string &channelName);
+		std::string getNicknameByFd(int client_fd);
 };
 
 #endif

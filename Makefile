@@ -1,4 +1,4 @@
-SRCS = main.cpp  Client.cpp Server.cpp
+SRCS = main.cpp  Client.cpp Server.cpp Channel.cpp
 NAME = ircserv
 OBJS = ${SRCS:.cpp=.o}
 CC = g++

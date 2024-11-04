@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:50 by xav               #+#    #+#             */
-/*   Updated: 2024/11/03 13:10:51 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/03 14:28:21 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,9 @@
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
+#include "Server.hpp"
+
+class Server;
 
 class Client 
 {
@@ -30,10 +33,10 @@ class Client
 		bool irssi;
 		bool pass_ok;
 		bool nick_ok;
-		
+		Server *server;
 
 	public:
-		Client(int fd);
+		Client(int fd, Server* Server);
 		~Client();
 
 		int getSocketFd() const;
