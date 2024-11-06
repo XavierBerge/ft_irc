@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:04 by xav               #+#    #+#             */
-/*   Updated: 2024/11/04 22:32:03 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/05 21:17:24 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,11 +77,22 @@ class Server
 		void handleKick(int client_fd, const std::string& command);
 		void handleInvite(int client_fd, const std::string& command);
 		void handleTopic(int client_fd, const std::string& command);
-		void handleNick(int client_fd, const std::string& command); // Déjà existante
+		void handleNick(int client_fd, const std::string& command);
 		void handleMode(int client_fd, const std::string& command);
 		void handlePart(int client_fd, const std::string& command);
 		void handleQuit(int client_fd, const std::string& command);
 		void handlePing(int client_fd, const std::string& command);
+
+		void handleModePlusO(int client_fd, const std::string& command);
+		void handleModePlusI(int client_fd, const std::string& command);
+		void handleModePlusL(int client_fd, const std::string& command);
+		void handleModePlusK(int client_fd, const std::string& command);
+		void handleModePlusT(int client_fd, const std::string& command);
+		void handleModeMinusO(int client_fd, const std::string& command);
+		void handleModeMinusI(int client_fd, const std::string& command);
+		void handleModeMinusL(int client_fd, const std::string& command);
+		void handleModeMinusK(int client_fd, const std::string& command);
+		void handleModeMinusT(int client_fd, const std::string& command);
 
 
 };

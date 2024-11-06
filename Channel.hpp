@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:39 by xav               #+#    #+#             */
-/*   Updated: 2024/11/04 15:45:23 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 09:08:29 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,30 +17,28 @@
 #include <set>
 #include <map>
 #include "Client.hpp"
-#include "Server.hpp"
 
 class Client;
-class Server;
 
 class Channel 
 {
-	private:
-		std::string name;
-		std::set<int> clients;
-		std::map<int, bool> operators;
-	
+    private:
+        std::string name;
+        std::map<std::string, int> clients; // Map nickname -> client_fd
+        std::map<std::string, int> operators; // Map nickname -> client_fd
+    public:
+        Channel(const std::string &channelName);
+        ~Channel();
 
-	public:
-		Channel(const std::string &channelName);
-		~Channel();
-
-		std::string getName() const;
-		bool addClient(int client_fd);
-		void removeClient(int client_fd);
-		bool isClientInChannel(int client_fd) const;
-		bool isOperator(int client_fd) const;
-		void promoteToOperator(int client_fd);
+        std::string getName() const;
+        bool addClient(const std::string &nickname, int client_fd);
+        void removeClient(const std::string &nickname);
+        bool isClientInChannel(const std::string &nickname) const;
+        bool isOperator(const std::string &nickname) const;
+        void promoteToOperator(const std::string &nickname, int client_fd);
 		void broadcastMessage(const std::string &message, int sender_fd);
+		int count() const;
 };
 
 #endif
+

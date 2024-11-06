@@ -1,4 +1,4 @@
-SRCS = main.cpp  Client.cpp Server.cpp Channel.cpp Authentification.cpp Command_parsing.cpp
+SRCS = main.cpp  Client.cpp Server.cpp Channel.cpp Authentification.cpp Command_parsing.cpp Commands.cpp Mode.cpp
 NAME = ircserv
 OBJS = ${SRCS:.cpp=.o}
 CC = g++

@@ -6,89 +6,77 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:14 by xav               #+#    #+#             */
-/*   Updated: 2024/11/04 15:45:09 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 09:07:42 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Channel.hpp"
 #include <iostream>
 
+Channel::Channel(const std::string &channelName) : name(channelName) {}
 
-Channel::Channel(const std::string &channelName) 
-    : name(channelName){}
-
-
-Channel::~Channel() 
-{
-    clients.clear();
-    operators.clear();
-}
+Channel::~Channel() {}
 
 std::string Channel::getName() const 
 {
     return name;
 }
 
-bool Channel::addClient(int client_fd) 
+bool Channel::addClient(const std::string &nickname, int client_fd) 
 {
-    if (clients.find(client_fd) == clients.end()) 
-	{
-        clients.insert(client_fd);
-        std::cout << "Client " << client_fd << " a rejoint le channel " << name << std::endl;
-        return true;
-    }
-    return false;
+    return clients.insert(std::make_pair(nickname, client_fd)).second;
 }
 
-void Channel::removeClient(int client_fd) 
+void Channel::removeClient(const std::string &nickname) 
 {
-    clients.erase(client_fd);
-    operators.erase(client_fd);
-    std::cout << "Client " << client_fd << " a quitté le channel " << name << std::endl;
+    clients.erase(nickname);
+    operators.erase(nickname);
 }
 
-bool Channel::isClientInChannel(int client_fd) const 
+bool Channel::isClientInChannel(const std::string &nickname) const 
 {
-    return clients.find(client_fd) != clients.end();
+    return clients.find(nickname) != clients.end();
 }
 
-bool Channel::isOperator(int client_fd) const 
+bool Channel::isOperator(const std::string &nickname) const 
 {
-    return operators.find(client_fd) != operators.end() && operators.at(client_fd);
+    return operators.find(nickname) != operators.end();
 }
-/*
-void Channel::promoteToOperator(int client_fd) 
+
+void Channel::promoteToOperator(const std::string &nickname, int client_fd) 
 {
-    if (isClientInChannel(target_fd)) 
+    if (isClientInChannel(nickname)) 
     {
-        operators[target_fd] = true;
-
-        // Obtenez les nicknames pour l'affichage
-       // std::string target_nickname = serverInstance.getNicknameByFd(target_fd);
-       // std::string promoter_nickname = serverInstance.getNicknameByFd(promoter_fd);
-
-        // Préparez le message de mode
-        std::string modeMessage = ":" + promoter_nickname + " MODE " + name + " +o " + target_nickname + "\r\n";
-
-        // Envoyez le message à tous les clients du channel
-        for (std::set<int>::iterator it = clients.begin(); it != clients.end(); ++it) 
-        {
-            send(*it, modeMessage.c_str(), modeMessage.size(), 0);
-        }
+        operators.insert(std::make_pair(nickname, client_fd));
     }
 }
-*/
-
-
 
 void Channel::broadcastMessage(const std::string &message, int sender_fd) 
 {
-	for (std::set<int>::iterator it = clients.begin(); it != clients.end(); ++it) 
+    for (std::map<std::string, int>::const_iterator it = clients.begin(); it != clients.end(); ++it) 
 	{
-		int client_fd = *it;
-		if (client_fd != sender_fd)
-			send(client_fd, message.c_str(), message.size(), 0);
-	}
+        if (it->second != sender_fd) 
+            send(it->second, message.c_str(), message.size(), 0);
+    }
 }
+
+
+int Channel::count() const 
+{
+    int uniqueClientsCount = 0;
+
+    // Parcourt les clients et ne compte que ceux qui ne sont pas opérateurs
+    for (std::map<std::string, int>::const_iterator it = clients.begin(); it != clients.end(); ++it) 
+	{
+        if (operators.find(it->first) == operators.end()) 
+            ++uniqueClientsCount;
+    }
+
+    // Ajoute le nombre total d'opérateurs
+    int totalCount = uniqueClientsCount + operators.size();
+    return totalCount;
+}
+
+
 
 
