@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:00 by xav               #+#    #+#             */
-/*   Updated: 2024/11/05 13:28:38 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 10:28:50 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,6 +91,11 @@ Server::~Server()
     if (server_fd >= 0) 
         close(server_fd);
 	
+}
+
+std::string Server::getHostname() const
+{
+	return hostname;
 }
 
 // ajoute fd a poll_fds

@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:45 by xav               #+#    #+#             */
-/*   Updated: 2024/11/05 13:25:59 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 10:26:29 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,17 @@ std::string Client::getNickname() const
 {
     return nickname;
 }
+
+void Client::setHostname(const std::string& host) 
+{
+    hostname = host;
+}
+
+std::string Client::getHostname() const 
+{
+    return hostname;
+}
+
 
 void Client::setUsername(const std::string& user) 
 {

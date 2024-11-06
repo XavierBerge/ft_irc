@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:04 by xav               #+#    #+#             */
-/*   Updated: 2024/11/05 21:17:24 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 10:30:57 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,6 +68,7 @@ class Server
 		~Server();
 		void run();
 		static void	SignalHandler(int signum);
+		std::string getHostname() const;
 
 
 

@@ -6,18 +6,62 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/05 13:26:27 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 09:11:01 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 13:45:11 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
-
+#include <algorithm> 
 
 void Server::handleJoin(int client_fd, const std::string& command) 
 {
-	(void) client_fd;
-    std::cout << "handleJoin called with command: "  << command << std::endl;
+    std::string channelName = command.substr(5);
+
+    size_t start = 0;
+    while (start < channelName.size() && isspace(channelName[start])) 
+        ++start;
+    size_t end = channelName.size();
+    while (end > start && isspace(channelName[end - 1])) 
+        --end;
+    channelName = channelName.substr(start, end - start);
+    
+    if (channelName.empty()) 
+    {
+        clients[client_fd]->sendToClient("461 " + clients[client_fd]->getNickname() + " JOIN :Not enough parameters\r\n");
+        return;
+    }
+
+    bool firstToJoin = false;
+    if (channels.find(channelName) == channels.end())
+    {
+        channels[channelName] = new Channel(channelName);
+        firstToJoin = true;
+    }
+
+    Channel *channel = channels[channelName];
+    std::string nickname = clients[client_fd]->getNickname();
+
+    if (channel->addClient(nickname, client_fd))
+    {
+        std::string joinMessage = ":" + clients[client_fd]->getNickname() + "!" + clients[client_fd]->getUsername() + "@" + clients[client_fd]->getHostname() + " JOIN " + channelName + "\r\n";
+        if (!firstToJoin)
+			channel->broadcastMessage(joinMessage);
+        clients[client_fd]->sendToClient("Vous avez rejoint " + channelName + "\r\n");
+
+        if (firstToJoin)
+		{
+			
+            channel->promoteToOperator(nickname, client_fd); // Utilise le nickname pour promouvoir l'opérateur
+			std::string modemsg = ":" + servername + " MODE " + channelName + " +o " + nickname + "\r\n";
+			channel->broadcastMessage(modemsg);
+		}
+    } 
+    else 
+    {
+        clients[client_fd]->sendToClient("Vous êtes déjà dans " + channelName + "\r\n");
+    }
 }
+
 
 void Server::handlePrivmsg(int client_fd, const std::string& command) 
 {

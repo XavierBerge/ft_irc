@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 13:02:38 by xav               #+#    #+#             */
-/*   Updated: 2024/11/04 22:11:46 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 10:27:15 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,10 +148,11 @@ void Server::handle_authentication(int client_fd, const std::string& data)
                 send(client_fd, error.c_str(), error.size(), 0);
                 continue;
             }
-
+			std::string realHostname = getHostname();
             // Mise à jour des informations du client
             client->setUsername(username);
             client->setRealname(realname);
+			client->setHostname(realHostname);
             client->authenticate();
             send_welcome_messages(client);
             return;  // Arrêter le traitement après l'authentification réussie

@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:50 by xav               #+#    #+#             */
-/*   Updated: 2024/11/04 20:29:29 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 10:25:14 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ class Client
 		std::string nickname;
 		std::string username;
 		std::string realname;
+		std::string hostname;
 		bool authenticated;
 		bool irssi;
 		bool pass_ok;
@@ -48,6 +49,9 @@ class Client
 
 		void setRealname(const std::string& name);
 		std::string getRealname() const;
+
+		void setHostname(const std::string& host);
+    	std::string getHostname() const;
 
 		bool isAuthenticated() const;
 		void authenticate();
