@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:45 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 10:26:29 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 16:20:12 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,11 +106,12 @@ void Client::authenticate()
 {
     authenticated = true;
 }
-
+/*
 ssize_t Client::readFromClient(char *buffer, size_t size) 
 {
     return recv(socket_fd, buffer, size, 0);
 }
+*/
 
 void Client::sendToClient(const std::string& message) 
 {
@@ -121,7 +122,40 @@ void Client::sendToClient(const std::string& message)
 
 
 
+ssize_t Client::readFromClient(char *tempBuffer, size_t size) 
+{
+    ssize_t bytes_received = recv(socket_fd, tempBuffer, size, 0);
+    if (bytes_received > 0) 
+	{
+        // Accumuler les données reçues dans le buffer interne
+        buffer.append(tempBuffer, bytes_received);
+    }
+    return bytes_received;
+}
 
+// Vérifie si le buffer interne contient une ligne complète (terminée par '\n')
+bool Client::hasCompleteLine() const 
+{
+    return buffer.find('\n') != std::string::npos;
+}
 
+// Récupère la première ligne complète et la supprime du buffer interne
+std::string Client::getCompleteLine() 
+{
+    size_t pos = buffer.find('\n');
+    if (pos != std::string::npos) 
+	{
+        std::string completeLine = buffer.substr(0, pos + 1); // Inclut le '\n'
+        buffer.erase(0, pos + 1); // Supprime la ligne du buffer
+        return completeLine;
+    }
+    return "";
+}
+
+// Vérifie si le buffer interne est vide
+bool Client::isBufferEmpty() const 
+{
+    return buffer.empty();
+}
 
 

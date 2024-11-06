@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:00 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 10:28:50 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 16:16:41 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -229,47 +229,47 @@ void Server::close_connection(int client_fd)
     clients.erase(client_fd);
 }
 
-
-void Server::handle_client_data(int client_fd) 
-{
+void Server::handle_client_data(int client_fd) {
     Client *client = clients[client_fd];
-    char buffer[1024];
-    memset(buffer, 0, sizeof(buffer));
+    char tempBuffer[1024];
+    memset(tempBuffer, 0, sizeof(tempBuffer));
 
     // Lire les données envoyées par le client
-    ssize_t bytes_received = client->readFromClient(buffer, sizeof(buffer));
+    ssize_t bytes_received = client->readFromClient(tempBuffer, sizeof(tempBuffer));
 
-    if (bytes_received <= 0) 
-    {
-        // Si on ne reçoit rien ou si la connexion est fermée
-        if (bytes_received == 0) 
-		{
+    if (bytes_received <= 0) {
+        // Gestion de la déconnexion ou de l'erreur
+        if (bytes_received == 0) {
             std::cout << "Client " << client_fd << " shut down the connection." << std::endl;
-        } 
-		else 
+        } else {
             perror("recv");
-        close_connection(client_fd);
-    } 
-    else 
-    {
-        // Convertir les données en une chaîne de caractères
-        std::string command(buffer);
-        command.erase(command.find_last_not_of("\r\n") + 1);  // Supprimer les éventuels caractères de nouvelle ligne
-
-        // Si le client n'est pas encore authentifié, gérer l'authentification
-        if (!client->isAuthenticated()) 
-            handle_authentication(client_fd, command);
-        // Sinon, gérer les commandes classiques après authentification
-        else 
-		{
-            handleCommand(client_fd, command);
-
-            if (command.find("/quit") == 0) 
-                close_connection(client_fd);
         }
+        close_connection(client_fd);
+        return;
+    }
 
+    // Tant qu'il y a une ligne complète à traiter dans le buffer
+    while (client->hasCompleteLine()) {
+        // Récupérer et traiter la première ligne complète
+        std::string command = client->getCompleteLine();
+        
+        // Supprimer les caractères de fin de ligne pour le traitement
+        command.erase(command.find_last_not_of("\r\n") + 1);
+
+        // Gérer la commande
+        if (!client->isAuthenticated()) {
+            handle_authentication(client_fd, command);
+        } else {
+            handleCommand(client_fd, command);
+            if (command.find("/quit") == 0) {
+                close_connection(client_fd);
+                return;
+            }
+        }
     }
 }
+
+
 
 void Server::SignalHandler(int signum)
 {

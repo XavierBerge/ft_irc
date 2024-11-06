@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:50 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 10:25:14 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 16:19:07 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,7 @@ class Client
 		bool pass_ok;
 		bool nick_ok;
 		Server *server;
+		std::string buffer; 
 
 	public:
 		Client(int fd, Server* Server);
@@ -42,7 +43,7 @@ class Client
 
 		int getSocketFd() const;
 		void setNickname(const std::string& nick);
-		std::string getNickname() const;
+		std::string getNickname() const;;
 
 		void setUsername(const std::string& user);
 		std::string getUsername() const;
@@ -68,6 +69,10 @@ class Client
 
 		void handleCommand(const std::string& command);
 		void handleModeCommand(const std::string& command);
+
+		bool isBufferEmpty() const;
+		std::string getCompleteLine();
+		bool hasCompleteLine() const;
 	};
 
 #endif

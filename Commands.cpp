@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/05 13:26:27 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 13:45:11 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/06 15:34:09 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ void Server::handleJoin(int client_fd, const std::string& command)
     {
         std::string joinMessage = ":" + clients[client_fd]->getNickname() + "!" + clients[client_fd]->getUsername() + "@" + clients[client_fd]->getHostname() + " JOIN " + channelName + "\r\n";
         if (!firstToJoin)
-			channel->broadcastMessage(joinMessage);
+			channel->broadcastMessage(joinMessage, client_fd);
         clients[client_fd]->sendToClient("Vous avez rejoint " + channelName + "\r\n");
 
         if (firstToJoin)
@@ -65,8 +65,28 @@ void Server::handleJoin(int client_fd, const std::string& command)
 
 void Server::handlePrivmsg(int client_fd, const std::string& command) 
 {
-	(void) client_fd;
-    std::cout << "handlePrivmsg called with command: " << command << std::endl;
+    std::istringstream iss(command);
+    std::string cmd, chOrNick, msg;
+    iss >> cmd >> chOrNick;
+    std::getline(iss, msg);
+
+    if (!msg.empty() && msg[0] == ' ') 
+        msg = msg.substr(1);
+
+    if (channels.find(chOrNick) != channels.end()) 
+	{
+        Channel *channel = channels[chOrNick];
+
+        if (!msg.empty()) 
+		{
+            std::string formattedMessage = ":" + clients[client_fd]->getNickname() + 
+                                           " PRIVMSG " + chOrNick + " :" + msg + "\r\n";
+
+            channel->broadcastMessage(formattedMessage, client_fd);
+        } 
+		else 
+            clients[client_fd]->sendToClient("412 " + clients[client_fd]->getNickname() + " :No text to send\r\n");
+    }
 }
 
 void Server::handleKick(int client_fd, const std::string& command) 
