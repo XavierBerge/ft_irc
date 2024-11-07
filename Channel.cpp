@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:14 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 16:20:42 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/07 14:56:38 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,10 +27,14 @@ bool Channel::addClient(const std::string &nickname, int client_fd)
     return clients.insert(std::make_pair(nickname, client_fd)).second;
 }
 
+void Channel::removeOperator(const std::string &nickname)
+{
+	operators.erase(nickname);
+}
+
 void Channel::removeClient(const std::string &nickname) 
 {
     clients.erase(nickname);
-    operators.erase(nickname);
 }
 
 bool Channel::isClientInChannel(const std::string &nickname) const 
@@ -86,6 +90,11 @@ int Channel::count() const
     // Ajoute le nombre total d'opérateurs
     int totalCount = uniqueClientsCount + operators.size();
     return totalCount;
+}
+
+bool Channel::isEmpty() const 
+{
+    return clients.empty();
 }
 
 

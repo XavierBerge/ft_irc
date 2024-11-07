@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:45 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 16:20:12 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/07 16:12:14 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,13 +14,16 @@
 #include "Server.hpp"
 
 Client::Client(int fd, Server* serverInstance) 
-    : socket_fd(fd), nickname(""), authenticated(false), irssi(false), pass_ok(false), nick_ok(false), server(serverInstance) {}
+    : socket_fd(fd), nickname(""), authenticated(false), irssi(false), pass_ok(false), nick_ok(false), invisible(false), server(serverInstance) {}
 
 Client::~Client() 
 {
     close(socket_fd);
     std::cout << "Client " << nickname << " disconnected." << std::endl;
 }
+
+void Client::setInvisible(bool invisible) {this->invisible = invisible;}
+bool Client::isInvisible() const { return invisible;}
 
 int Client::getSocketFd() const 
 {
@@ -157,5 +160,6 @@ bool Client::isBufferEmpty() const
 {
     return buffer.empty();
 }
+
 
 

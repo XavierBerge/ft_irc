@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:50 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 16:19:07 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/07 16:07:24 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ class Client
 		bool irssi;
 		bool pass_ok;
 		bool nick_ok;
+		bool invisible;
 		Server *server;
 		std::string buffer; 
 
@@ -63,6 +64,8 @@ class Client
 		bool isIrssi() const;
 		bool isPass_Ok() const;
 		bool isNick_Ok() const;
+		bool isInvisible() const;
+		void setInvisible(bool invisible);
 
 		ssize_t readFromClient(char *buffer, size_t size);
 		void sendToClient(const std::string& message);

@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/05 13:26:27 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 15:34:09 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/07 16:42:20 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ void Server::handleJoin(int client_fd, const std::string& command)
         std::string joinMessage = ":" + clients[client_fd]->getNickname() + "!" + clients[client_fd]->getUsername() + "@" + clients[client_fd]->getHostname() + " JOIN " + channelName + "\r\n";
         if (!firstToJoin)
 			channel->broadcastMessage(joinMessage, client_fd);
-        clients[client_fd]->sendToClient("Vous avez rejoint " + channelName + "\r\n");
+        clients[client_fd]->sendToClient("You joined " + channelName + "\r\n");
 
         if (firstToJoin)
 		{
@@ -58,7 +58,7 @@ void Server::handleJoin(int client_fd, const std::string& command)
     } 
     else 
     {
-        clients[client_fd]->sendToClient("Vous êtes déjà dans " + channelName + "\r\n");
+        clients[client_fd]->sendToClient("You already joined " + channelName + "\r\n");
     }
 }
 
@@ -70,24 +70,71 @@ void Server::handlePrivmsg(int client_fd, const std::string& command)
     iss >> cmd >> chOrNick;
     std::getline(iss, msg);
 
+    // Supprime le premier espace de `msg` s'il existe
     if (!msg.empty() && msg[0] == ' ') 
-        msg = msg.substr(1);
+        msg = msg.substr(1);  
 
+    // Vérifie si `msg` commence déjà par `:`
+    if (msg[0] != ':')
+        msg = ":" + msg;
+
+    // Vérifie si `chOrNick` est un canal
     if (channels.find(chOrNick) != channels.end()) 
-	{
+    {
         Channel *channel = channels[chOrNick];
 
-        if (!msg.empty()) 
-		{
-            std::string formattedMessage = ":" + clients[client_fd]->getNickname() + 
-                                           " PRIVMSG " + chOrNick + " :" + msg + "\r\n";
+        // Vérifie que le client est bien membre du channel
+        std::string nickname = clients[client_fd]->getNickname();
+        if (!channel->isClientInChannel(nickname)) 
+        {
+            clients[client_fd]->sendToClient("442 " + nickname + " " + chOrNick + " :You're not on that channel\r\n");
+            return;
+        }
 
+        if (!msg.empty()) 
+        {
+            std::string formattedMessage = ":" + nickname + 
+                                           " PRIVMSG " + chOrNick + " " + msg + "\r\n";
             channel->broadcastMessage(formattedMessage, client_fd);
         } 
-		else 
-            clients[client_fd]->sendToClient("412 " + clients[client_fd]->getNickname() + " :No text to send\r\n");
+        else 
+            clients[client_fd]->sendToClient("412 " + nickname + " :No text to send\r\n");
+    } 
+    // Sinon, on traite `chOrNick` comme un nickname pour un message privé
+    else 
+    {
+        // Recherche le client avec le nickname spécifié
+        Client* targetClient = NULL;
+        for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
+        {
+            if (it->second->getNickname() == chOrNick) 
+            {
+                targetClient = it->second;
+                break;
+            }
+        }
+
+        if (targetClient) 
+        {
+            if (!msg.empty()) 
+            {
+                std::string formattedMessage = ":" + clients[client_fd]->getNickname() + 
+                                               " PRIVMSG " + chOrNick + " " + msg + "\r\n";
+
+                targetClient->sendToClient(formattedMessage);
+            } 
+            else 
+            {
+                clients[client_fd]->sendToClient("412 " + clients[client_fd]->getNickname() + " :No text to send\r\n");
+            }
+        } 
+        else 
+            clients[client_fd]->sendToClient("401 " + clients[client_fd]->getNickname() + 
+                                            " " + chOrNick + " :No such nick/channel\r\n");
     }
 }
+
+
 
 void Server::handleKick(int client_fd, const std::string& command) 
 {
@@ -107,38 +154,70 @@ void Server::handleTopic(int client_fd, const std::string& command)
     std::cout << "handleTopic called with command: " << command << std::endl;
 }
 
-void Server::handleMode(int client_fd, const std::string& command) 
-{
-    std::map<std::string, void (Server::*)(int, const std::string&)> modeMap;
-
-    modeMap["+o"] = &Server::handleModePlusO;
-    modeMap["-o"] = &Server::handleModeMinusO;
-    modeMap["+i"] = &Server::handleModePlusI;
-    modeMap["-i"] = &Server::handleModeMinusI;
-    modeMap["+l"] = &Server::handleModePlusL;
-    modeMap["-l"] = &Server::handleModeMinusL;
-    modeMap["+k"] = &Server::handleModePlusK;
-    modeMap["-k"] = &Server::handleModeMinusK;
-    modeMap["+t"] = &Server::handleModePlusT;
-    modeMap["-t"] = &Server::handleModeMinusT;
-
-
-    std::istringstream iss(command);
-    std::string commandType, channel, modeOption;
-    iss >> commandType >> channel >> modeOption;
-
-    if (!modeOption.empty() && modeMap.find(modeOption) != modeMap.end()) 
-        (this->*modeMap[modeOption])(client_fd, command);
-	else 
-        std::cout << "Unknown or missing mode option in command: " << command << std::endl;
-}
-
-
 void Server::handlePart(int client_fd, const std::string& command) 
 {
-	(void) client_fd;
-    std::cout << "handlePart called with command: " << command << std::endl;
+    std::istringstream iss(command);
+    std::string cmd, channelName, partMessage;
+
+    iss >> cmd >> channelName;
+
+    if (channelName.empty()) 
+    {
+        clients[client_fd]->sendToClient("461 " + clients[client_fd]->getNickname() + " PART :Not enough parameters\r\n");
+        return;
+    }
+
+    std::getline(iss, partMessage);
+    if (!partMessage.empty() && partMessage[0] == ' ')
+        partMessage = partMessage.substr(1);
+
+    if (!partMessage.empty() && partMessage[0] == ':')
+        partMessage = partMessage.substr(1);
+
+    if (channels.find(channelName) == channels.end()) 
+    {
+        clients[client_fd]->sendToClient("403 " + clients[client_fd]->getNickname() + " " + channelName + " :No such channel\r\n");
+        return;
+    }
+
+    Channel *channel = channels[channelName];
+    std::string nickname = clients[client_fd]->getNickname();
+    
+    if (!channel->isClientInChannel(nickname)) 
+    {
+        clients[client_fd]->sendToClient("442 " + nickname + " " + channelName + " :You're not on that channel\r\n");
+        return;
+    }
+
+    if (channel->isOperator(nickname)) 
+        channel->removeOperator(nickname);
+
+    // Retirer le client du channel
+    channel->removeClient(nickname);
+
+    // Envoi du message PART aux autres utilisateurs du channel
+    std::string fullPartMessage = ":" + clients[client_fd]->getNickname() + " PART " + channelName;
+    if (!partMessage.empty()) 
+    {
+        fullPartMessage += " :" + partMessage;
+    }
+    fullPartMessage += "\r\n";
+
+    // Envoyer ce message à tous les autres membres du channel
+    channel->broadcastMessage(fullPartMessage);
+
+    // Envoyer une notification au client qui quitte
+    clients[client_fd]->sendToClient(":" + servername + " You have left " + channelName + "\r\n");
+
+    // Vérifier si le channel est vide
+    if (channel->isEmpty()) 
+    {
+        // Si le channel est vide, supprimer le channel
+        delete channel;
+        channels.erase(channelName);
+    }
 }
+
 
 void Server::handlePing(int client_fd, const std::string& command) 
 {
@@ -193,7 +272,7 @@ void Server::handleNick(int client_fd, const std::string& command)
 
     if (nickname_taken) 
 	{
-        std::string response = "433 * " + nickname + " :This nickname is already taken. Please choose a different nickname.\r\n";
+        std::string response = ":" + servername + " 433 " + nickname + " " + nickname + " :Nickname is already in use\r\n";
         send(client_fd, response.c_str(), response.size(), 0);
         return;
     }

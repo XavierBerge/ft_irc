@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:04 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 10:30:57 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/07 16:19:50 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,6 +94,7 @@ class Server
 		void handleModeMinusL(int client_fd, const std::string& command);
 		void handleModeMinusK(int client_fd, const std::string& command);
 		void handleModeMinusT(int client_fd, const std::string& command);
+		void handleNicknameModeI(int client_fd, const std::string& channel);
 
 
 };

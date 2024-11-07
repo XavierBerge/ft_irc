@@ -6,19 +6,16 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 13:02:38 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 10:27:15 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/07 16:46:09 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
-// Nouvelle connexion d'un client
 void Server::handle_new_connection()
 {
-    // Vérification si la limite de connexions est atteinte
     if (clients.size() >= MAX_CLIENTS)
     {
-        // Accepter temporairement la connexion pour envoyer un message de refus
         struct sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
         int temp_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
@@ -27,9 +24,9 @@ void Server::handle_new_connection()
         {
             std::string full_message = "Server is full. Connection refused.\r\n";
             send(temp_fd, full_message.c_str(), full_message.size(), 0);
-            close(temp_fd); // Fermer immédiatement le descripteur
+            close(temp_fd);
         }
-        return; // Retourner sans ajouter de client
+        return;
     }
 
     struct sockaddr_in client_addr;
@@ -109,7 +106,8 @@ void Server::handle_authentication(int client_fd, const std::string& data)
             } 
             else 
             {
-                std::cout << "Wrong password. Try to reconnect with the correct password\r\n";
+                std::string error = "Wrong password. Try to reconnect with the correct password\r\n";
+				send(client_fd, error.c_str(), error.size(), 0);
                 close_connection(client_fd);
                 return;
             }

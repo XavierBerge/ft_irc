@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:39 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 15:22:32 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/07 14:57:21 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,8 @@ class Channel
         void promoteToOperator(const std::string &nickname, int client_fd);
 		void broadcastMessage(const std::string &message);
 		void broadcastMessage(const std::string &message, int sender_fd);
+		void removeOperator(const std::string &nickname);
+		bool isEmpty() const;
 		int count() const;
 };
 
