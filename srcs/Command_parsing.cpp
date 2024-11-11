@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 15:24:34 by xav               #+#    #+#             */
-/*   Updated: 2024/11/07 16:44:28 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 20:37:31 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,21 +16,37 @@
 
 void Server::handleCommand(int client_fd, const std::string& command) 
 {
+    Client* client = clients[client_fd];
+    
     std::istringstream iss(command);
     std::string cmd;
     iss >> cmd;
 
+    // Only display the command if it is not "PING"
+    if (client && cmd != "PING")
+	{
+		std::cout << "\n\033[1;94m"
+          << "Received command from " 
+          << "\033[1;32m"
+          << client->getNickname() 
+          << "\033[1;36m"
+          << " :\n" << command 
+          << "\033[0m\n" << std::endl;
+	}
+
     std::map<std::string, CommandHandler>::iterator it = commandMap.find(cmd);
     if (it != commandMap.end()) 
-	{
+    {
         CommandHandler handler = it->second;
         (this->*handler)(client_fd, command);
     } 
-	else 
-	{
+    else 
+    {
         std::cout << "Unknown command: " << cmd << std::endl;
     }
 }
+
+
 
 void Server::handleMode(int client_fd, const std::string& command) 
 {

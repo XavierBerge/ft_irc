@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 13:02:38 by xav               #+#    #+#             */
-/*   Updated: 2024/11/10 15:20:38 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 20:33:35 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ void Server::handle_new_connection()
         return; 
     }
 
-    // Utilisation de inet_ntoa() pour obtenir l'adresse IP du client
+    // Use inet_ntoa() to get the client's IP address
     std::cout << "\033[1;32m"
               << "New connection accepted : " << client_fd 
               << " from " << inet_ntoa(client_addr.sin_addr) 
@@ -48,7 +48,7 @@ void Server::handle_new_connection()
               << "\033[0m"
               << std::endl;
 
-    // Rendre le socket client non-bloquant
+    // Make the client socket non-blocking
     if (fcntl(client_fd, F_SETFL, O_NONBLOCK) < 0)
     {
         perror("fcntl");
@@ -56,19 +56,19 @@ void Server::handle_new_connection()
         return; 
     }
 
-    // Ajouter le client dans la liste des clients connectés
+    // Add the client to the list of connected clients
     Client *new_client = new Client(client_fd);
     clients[client_fd] = new_client;
 
-    // Ajouter le descripteur du client à poll() pour surveiller les événements d'E/S
+    // Add the client descriptor to poll() to monitor I/O events
     add_poll_fd(client_fd, POLLIN);
 
-    // Envoyer un message de demande de mot de passe au client
+    // Send a password request message to the client
     std::string welcome_message = "Please enter the server password to get access : PASS <password>\r\n";
     if (send(client_fd, welcome_message.c_str(), welcome_message.size(), 0) < 0)
     {
         perror("send");
-        close_connection(client_fd); // Fermer si l'envoi échoue
+        close_connection(client_fd); // Close if the send fails
         return;
     }
 }
@@ -84,7 +84,14 @@ void Server::handle_authentication(int client_fd, const std::string& data)
         if (!line.empty() && line[line.size() - 1] == '\r') 
             line.erase(line.size() - 1);
 
-        std::cout << "Received command from " << client->getNickname() << " : \n" << line << std::endl;
+        std::cout << "\033[1;94m"
+          << "Received command from " 
+          << "\033[1;32m"
+          << client->getNickname() 
+          << "\033[1;36m"
+          << " : \n" << line 
+          << "\033[0m\n" << std::endl;
+
 
         if (line.find("CAP LS") == 0) 
         {
@@ -129,7 +136,7 @@ void Server::handle_authentication(int client_fd, const std::string& data)
                 continue;
             }
 
-            // Extraire les paramètres de la commande USER
+            // Extract the parameters from the USER command
             std::istringstream iss(line);
             std::string command, username, hostname, servername, realname;
             iss >> command >> username >> hostname >> servername;
@@ -147,23 +154,20 @@ void Server::handle_authentication(int client_fd, const std::string& data)
                 continue;
             }
 			std::string realHostname = getHostname();
-            // Mise à jour des informations du client
+            // Update client information
             client->setUsername(username);
             client->setRealname(realname);
 			client->setHostname(realHostname);
             client->authenticate();
             send_welcome_messages(client);
-            return;  // Arrêter le traitement après l'authentification réussie
+            return;  // Stop processing after successful authentication
         }
 
-        // Message d'erreur par défaut si la commande est inconnue
-        std::string response = "In authentification process PASS, NICK and USER must be defined, command : " + line + " is not valid.\r\n";
+        // Default error message if the command is unknown
+        std::string response = "In authentication process PASS, NICK and USER must be defined, command : " + line + " is not valid.\r\n";
         send(client_fd, response.c_str(), response.size(), 0);
     }
 }
-
-
-
 
 void Server::send_welcome_messages(Client *client)
 {
@@ -201,4 +205,5 @@ void Server::send_welcome_messages(Client *client)
     response = "376 " + nickname + " :End of /MOTD command\r\n";
     client->sendToClient(response);
 }
+
 

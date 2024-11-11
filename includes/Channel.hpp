@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:39 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 12:52:20 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 15:24:35 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,38 +38,44 @@ class Channel
     public:
         Channel(const std::string &channelName);
         ~Channel();
-
+		//getters
         std::string getName() const;
-        bool addClient(const std::string &nickname, int client_fd);
-        void removeClient(const std::string &nickname);
-        bool isClientInChannel(const std::string &nickname) const;
-        bool isOperator(const std::string &nickname) const;
-        void promoteToOperator(const std::string &nickname, int client_fd);
-		void broadcastMessage(const std::string &message);
-		void broadcastMessage(const std::string &message, int sender_fd);
-		void removeOperator(const std::string &nickname);
-		bool isEmpty() const;
-		int count() const;
-		void setInvited(bool invited);
-		bool getInvited() const;
-		void setKey(std::string key);
-		std::string getKey() const;
-		bool getKeyNeeded() const;
-		void setKeyNeeded(bool keyNeeded);
-		size_t getLimitValue() const;
-		void setLimitValue(size_t limitValue);
-		void setLimit(bool limit);
 		bool getLimit() const;
 		std::string getTopic() const;
 		std::string getTopicOpe() const; 
 		time_t getTopicTime() const; 
 		bool getTopicRight() const; 
+		bool isEmpty() const;
+        bool isClientInChannel(const std::string &nickname) const;
+        bool isOperator(const std::string &nickname) const;
+		bool getInvited() const;
+		std::string getKey() const;
+		bool getKeyNeeded() const;
+		bool hasOperators() const;
+		size_t getLimitValue() const;
+		
+		//setters
+		void setInvited(bool invited);
+		void setKey(std::string key);
+		void setKeyNeeded(bool keyNeeded);
+		void setLimitValue(size_t limitValue);
+		void setLimit(bool limit);
 		void setTopic(std::string topic);
 		void setTopicOpe(std::string topicOpe); 
 		void setTopicTime(time_t topicTime); 
 		void setTopicRight(bool topicRight);
-		bool hasOperators() const;
+		
+		// clients and operators maps method
+        bool addClient(const std::string &nickname, int client_fd);
+        void removeClient(const std::string &nickname);
+        void promoteToOperator(const std::string &nickname, int client_fd);
+		void removeOperator(const std::string &nickname);
 		void promoteNextOperator(int client_fd);
+		int count() const;
+
+		// sending messages to channels methods
+		void broadcastMessage(const std::string &message);
+		void broadcastMessage(const std::string &message, int sender_fd);
 				
 };
 

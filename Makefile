@@ -10,7 +10,15 @@ SRCS = $(SRCDIR)/main.cpp \
        $(SRCDIR)/Channel.cpp \
        $(SRCDIR)/Authentification.cpp \
        $(SRCDIR)/Command_parsing.cpp \
-       $(CMDIR)/Commands.cpp \
+       $(CMDIR)/Invite.cpp \
+	   $(CMDIR)/Join.cpp \
+	   $(CMDIR)/Kick.cpp \
+	   $(CMDIR)/Nick.cpp \
+	   $(CMDIR)/Part.cpp \
+	   $(CMDIR)/Ping.cpp \
+	   $(CMDIR)/Privmsg.cpp \
+	   $(CMDIR)/Quit.cpp \
+	   $(CMDIR)/Topic.cpp \
        $(SRCDIR)/Mode.cpp
 
 NAME = ircserv

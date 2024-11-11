@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:50 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 12:34:06 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 15:28:43 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,51 +44,46 @@ class Client
 		std::vector<std::string> channelInvitations;
 		std::vector<std::string> client_channels;
 
-
 	public:
 		Client(int fd);
 		~Client();
-
+		//getters
 		int getSocketFd() const;
-		void setNickname(const std::string& nick);
 		std::string getNickname() const;;
-
-		void setUsername(const std::string& user);
 		std::string getUsername() const;
-
-		void setRealname(const std::string& name);
 		std::string getRealname() const;
-
-		void setHostname(const std::string& host);
     	std::string getHostname() const;
-
 		bool isAuthenticated() const;
-		void authenticate();
-		void pass_true();
-		void irssi_true();
-		void nick_true();
-
 		bool isIrssi() const;
 		bool isPass_Ok() const;
 		bool isNick_Ok() const;
 		bool isInvisible() const;
+		const std::vector<std::string>& getChannels() const;
+    	bool isInvitedToChannel(const std::string& channelName) const;
+	
+		//setters
+		void setNickname(const std::string& nick);
+		void setUsername(const std::string& user);
+		void setRealname(const std::string& name);
 		void setInvisible(bool invisible);
+		void setHostname(const std::string& host);
+		void pass_true();
+		void nick_true();
+		void irssi_true();
+		void authenticate();
 
+		//buffer methods
 		ssize_t readFromClient(char *buffer, size_t size);
 		void sendToClient(const std::string& message);
-
-		void handleCommand(const std::string& command);
-		void handleModeCommand(const std::string& command);
-
 		bool isBufferEmpty() const;
-		std::string getCompleteLine();
 		bool hasCompleteLine() const;
+		std::string getCompleteLine();
+
+		// channels vectors methods
 		void addChannelInvitation(const std::string& channelName);
-    	bool isInvitedToChannel(const std::string& channelName) const;
 		void addChannel(const std::string& channelName);
 		void removeChannel(const std::string& channelName);
 		void clearChannels();
-		const std::vector<std::string>& getChannels() const;
 		
 	};
 

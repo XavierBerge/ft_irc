@@ -6,13 +6,13 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:00 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 12:59:49 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 20:47:33 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
- bool Server::Signal = false;
+bool Server::Signal = false;
 
 void Server::initializeCommandMap() 
 {
@@ -30,75 +30,85 @@ void Server::initializeCommandMap()
 
 Server::Server(int port, const std::string &password) : password(password), hostname("client.host"), servername("irc.tower.com")
 {
-    // AF_INET = IPv4 , SOCK_STREAM = TCP
+    // AF_INET = IPv4, SOCK_STREAM = TCP
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0)
     {
+		std::cerr << RED; 
         perror("socket");
+		std::cerr << RESET;
         exit(EXIT_FAILURE);
     }
     int opt = 1;
-    // Option SO_REUSEADDR qui permet de relancer directement le serveur s'il vient d'etre fermer avant qu'il libere son adresse et son port
+    // SO_REUSEADDR option allows restarting the server directly after it has been closed before its address and port are fully released
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0)
     {
+		std::cerr << RED; 
         perror("setsockopt");
+		std::cerr << RESET;
         exit(EXIT_FAILURE);
     }
-    // Socket en mode non bloquant = Programme ne bloque pas sur read, write, send, recv s'ils sont impossibles
+    // Set socket to non-blocking mode = Program will not block on read, write, send, recv if they are impossible
     if (fcntl(server_fd, F_SETFL, O_NONBLOCK) < 0)
     {
+		std::cerr << RED; 
         perror("fcntl");
+		std::cerr << RESET;
         exit(EXIT_FAILURE);
     }
-    // Configuration adresse IP 
-    struct sockaddr_in server_addr; // struct pour info adresse ip client
-    memset(&server_addr, 0, sizeof(server_addr)); // init tout a 0 pour eviter valeur random
-    server_addr.sin_family = AF_INET; // IpV4
-    server_addr.sin_addr.s_addr = INADDR_ANY; // n'importe quel adresse ip locale 
-    server_addr.sin_port = htons(port); // port d'ecoute converti en ordre d'octets reseau
+    // IP address configuration
+    struct sockaddr_in server_addr; // struct for client IP address information
+    memset(&server_addr, 0, sizeof(server_addr)); // initialize everything to 0 to avoid random values
+    server_addr.sin_family = AF_INET; // IPv4
+    server_addr.sin_addr.s_addr = INADDR_ANY; // any local IP address
+    server_addr.sin_port = htons(port); // listening port converted to network byte order
 
-    // Bind du socket a l'adresse ip et au port
+    // Bind the socket to IP address and port
     if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
     {
+		std::cerr << RED;
         perror("bind"); 
+		std::cerr << RESET;
         exit(EXIT_FAILURE);
     }
-    // Activation du socket en ecoute
+    // Enable socket listening
     if (listen(server_fd, SOMAXCONN) < 0)
     {
+		std::cerr << RED;
         perror("listen");
+		std::cerr << RESET;
         exit(EXIT_FAILURE);
     }
-    // Ajout du socket a poll_fds en 3(0 = stdin, 1 = stdout, 2 = stderr)
+    // Add the socket to poll_fds at index 3 (0 = stdin, 1 = stdout, 2 = stderr)
     add_poll_fd(server_fd, POLLIN);
-	initializeCommandMap();
+    initializeCommandMap();
 }
 
 Server::~Server() 
 {
-	for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) 
-	{
-    	delete it->second;
-	}
-	channels.clear();
+    for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) 
+    {
+        delete it->second;
+    }
+    channels.clear();
 
     for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
-	{
+    {
         close(it->first);
         delete it->second;
     }
     clients.clear();
     if (server_fd >= 0) 
         close(server_fd);
-	
+    
 }
 
 std::string Server::getHostname() const
 {
-	return hostname;
+    return hostname;
 }
 
-// ajoute fd a poll_fds
+// Adds fd to poll_fds
 void Server::add_poll_fd(int fd, short events)
 {
     struct pollfd pfd;
@@ -107,7 +117,7 @@ void Server::add_poll_fd(int fd, short events)
     pfd.revents = 0;
     poll_fds.push_back(pfd);
 }
-// supprime un fd a poll_fds
+// Removes a fd from poll_fds
 void Server::remove_poll_fd(int fd)
 {
     for (std::vector <struct pollfd>:: iterator it = poll_fds.begin(); it != poll_fds.end(); ++it)
@@ -121,67 +131,69 @@ void Server::remove_poll_fd(int fd)
 }
 
 
-// Boucle principale du serveur 
+// Main server loop
 void Server::run()
 {
-    while (!Server::Signal)  // Boucle tant qu'aucun signal d'arrêt n'est capté
+    while (!Server::Signal)  // Loop until a termination signal is received
     {
-        // Appel à poll, vérification de la taille et gestion des signaux
+        // Call poll, check the size and handle signals
         int poll_count = poll(&poll_fds[0], poll_fds.size(), -1);
 
         if (poll_count < 0) 
-		{
+        {
             if (errno == EINTR) 
-                break; // Si poll est interrompu par un signal, sortir de la boucle
-			else 
-			{
+                break; // If poll is interrupted by a signal, exit the loop
+            else 
+            {
+				std::cerr << RED; 
                 perror("poll");
+				std::cerr << RESET;
                 exit(EXIT_FAILURE);
             }
         }
 
-        // Parcours des descripteurs pour vérifier les événements
+        // Traverse descriptors to check events
         for (size_t i = 0; i < poll_fds.size(); ++i) 
-		{
-            // Gestion des événements de lecture
+        {
+            // Handle read events
             if (poll_fds[i].revents & POLLIN) 
-			{
+            {
                 if (poll_fds[i].fd == server_fd)
-                    handle_new_connection();  // Gère une nouvelle connexion au serveur
+                    handle_new_connection();  // Handle a new connection to the server
                 else
-                    handle_client_data(poll_fds[i].fd);  // Gère les données d'un client existant
+                    handle_client_data(poll_fds[i].fd);  // Handle data from an existing client
             }
 
-            // Gestion des erreurs et des déconnexions
+            // Handle errors and disconnections
             if (poll_fds[i].revents & (POLLHUP | POLLERR | POLLNVAL)) 
-			{
+            {
                 if (poll_fds[i].fd != server_fd) 
-				{
-                    std::cout << "Deconnexion ou erreur sur le client " << poll_fds[i].fd << std::endl;
-                    close_connection(poll_fds[i].fd);  // Ferme la connexion du client en cas d'erreur
+                {
+                    std::cout << "Disconnection or error on client " << poll_fds[i].fd << std::endl;
+                    close_connection(poll_fds[i].fd);  // Close the client's connection in case of error
                 }
             }
         }
     }
-	
-	for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) 
-	{
-    	delete it->second;
-	}
-	channels.clear();
-
-    std::cout << "\nSignal received." << std::endl;
-    // Fermer tous les sockets des clients et libérer la mémoire associée
-    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
-	{
-        close(it->first); // Ferme le descripteur de fichier du client
-        delete it->second; // Libère la mémoire associée à chaque objet Client
+    
+    for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) 
+    {
+        delete it->second;
     }
-    clients.clear(); // Vider la map des clients
+    channels.clear();
 
-    // Fermer le socket du serveur si toujours ouvert
+    std::cout << RED << "\nSignal received." << RESET << std::endl;
+    // Close all client sockets and free associated memory
+    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
+    {
+        close(it->first); // Close the client's file descriptor
+        delete it->second; // Free memory associated with each Client object
+    }
+    clients.clear(); // Clear the clients map
+
+    // Close server socket if still open
     if (server_fd >= 0) 
-	{
+    {
         close(server_fd);
     }
 
@@ -201,48 +213,45 @@ void Server::handle_client_data(int client_fd)
     char tempBuffer[1024];
     memset(tempBuffer, 0, sizeof(tempBuffer));
 
-    // Lire les données envoyées par le client
+    // Read data sent by the client
     ssize_t bytes_received = client->readFromClient(tempBuffer, sizeof(tempBuffer));
 
     if (bytes_received <= 0) 
-	{
-        // Gestion de la déconnexion ou de l'erreur
-        if (bytes_received == 0) {
+    {
+        // Handle disconnection or error
+        if (bytes_received == 0) 
+		{
             std::cout << "Client " << client_fd << " shut down the connection." << std::endl;
         } 
-		else 
-		{
+        else 
             perror("recv");
-        }
         close_connection(client_fd);
         return;
     }
 
-    // Tant qu'il y a une ligne complète à traiter dans le buffer
+    // While there is a complete line to process in the buffer
     while (client->hasCompleteLine()) 
-	{
-        // Récupérer et traiter la première ligne complète
+    {
+        // Retrieve and process the first complete line
         std::string command = client->getCompleteLine();
         
-        // Supprimer les caractères de fin de ligne pour le traitement
+        // Remove end-of-line characters for processing
         command.erase(command.find_last_not_of("\r\n") + 1);
 
-        // Gérer la commande
+        // Process the command
         if (!client->isAuthenticated()) 
             handle_authentication(client_fd, command);
-		else 
-		{
+        else 
+        {
             handleCommand(client_fd, command);
             if (command.find("/quit") == 0) 
-			{
+            {
                 close_connection(client_fd);
                 return;
             }
         }
     }
 }
-
-
 
 void Server::SignalHandler(int signum)
 {

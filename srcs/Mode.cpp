@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/05 21:12:32 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 14:02:46 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 16:49:33 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -276,20 +276,14 @@ void Server::handleModePlusT(int client_fd, const std::string& command)
     std::string mode, channelName;
     iss >> mode >> channelName;
 
-    // On récupère le canal correspondant
     Channel *channel = channels[channelName];
-
-    // Si le mode +t est déjà actif, inutile de changer quoi que ce soit
+	
     if (channel->getTopicRight()) 
     {
         clients[client_fd]->sendToClient(": 691 " + clients[client_fd]->getNickname() + " NOTICE  " + channelName + " :Topic protection already enabled\r\n");
         return;
     }
-
-    // Activation du mode +t
     channel->setTopicRight(true);
-
-    // Notification à tous les membres du canal de l'activation du mode +t
     std::string response = "MODE " + channelName + " +t\r\n";
     channel->broadcastMessage(response);
 }
@@ -300,20 +294,14 @@ void Server::handleModeMinusT(int client_fd, const std::string& command)
     std::string mode, channelName;
     iss >> mode >> channelName;
 
-    // On récupère le canal correspondant
     Channel *channel = channels[channelName];
 
-    // Si le mode +t n'est pas actif, inutile de changer quoi que ce soit
     if (!channel->getTopicRight()) 
     {
         clients[client_fd]->sendToClient(": 692 " + clients[client_fd]->getNickname() + " NOTICE  " + channelName + " :Topic protection already disabled\r\n");
         return;
     }
-
-    // Désactivation du mode +t
     channel->setTopicRight(false);
-
-    // Notification à tous les membres du canal de la désactivation du mode +t
     std::string response = "MODE " + channelName + " -t\r\n";
     channel->broadcastMessage(response);
 }

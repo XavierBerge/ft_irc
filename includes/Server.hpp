@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:04 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 12:26:05 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 20:44:56 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,10 +29,11 @@
 #include <cerrno>
 #include <sstream>
 #include <ctime>
+#include <algorithm> 
 
 #define MAX_CLIENTS 10
-
-
+#define RED "\033[1;31m"
+#define RESET "\033[0m"
 
 class Client;
 
@@ -52,26 +53,28 @@ class Server
 		typedef void (Server::*CommandHandler)(int, const std::string&);
 		std::map<std::string, CommandHandler> commandMap;
 
-		// Méthodes privées
-		void add_poll_fd(int fd, short events);
+		void add_poll_fd(int fd, short events); 
+		void handle_client_data(int client_fd); // parsing data from client
+		// clean exit methods
 		void remove_poll_fd(int fd);
-		void handle_new_connection();
-		void handle_client_data(int client_fd);
 		void close_connection(int client_fd);
+		// authentification methods
 		void handle_authentication(int client_fd, const std::string& command);
+		void handle_new_connection();
 		void send_welcome_messages(Client  *client);
-		void initializeCommandMap();
+		
+		void initializeCommandMap(); // Init for command parsing
 		
 
 	public:
 		Server(int port, const std::string& password);
 		~Server();
-		void run();
-		static void	SignalHandler(int signum);
-		std::string getHostname() const;
+		void run(); // main loop
+		static void	SignalHandler(int signum); // signals
+		std::string getHostname() const; // getter
 
 
-
+		// Commands
 		void handleCommand(int client_fd, const std::string& command);
 		void handleJoin(int client_fd, const std::string& command);
 		void handlePrivmsg(int client_fd, const std::string& command);
@@ -84,6 +87,7 @@ class Server
 		void handleQuit(int client_fd, const std::string& command);
 		void handlePing(int client_fd, const std::string& command);
 
+		// Mode options
 		void handleModePlusO(int client_fd, const std::string& command);
 		void handleModePlusI(int client_fd, const std::string& command);
 		void handleModePlusL(int client_fd, const std::string& command);
@@ -96,7 +100,8 @@ class Server
 		void handleModeMinusT(int client_fd, const std::string& command);
 		void handleNicknameModeI(int client_fd, const std::string& channel);
 
-		void sendChannelTopic(int client_fd, Channel* channel);
+		void sendChannelTopic(int client_fd, Channel* channel); 
+		
 		void removeClientFromAllChannels(int client_fd);
 
 
