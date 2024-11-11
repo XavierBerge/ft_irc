@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:50 by xav               #+#    #+#             */
-/*   Updated: 2024/11/07 16:07:24 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 12:34:06 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,9 +18,14 @@
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
+#include <vector>
+#include <algorithm>
 #include "Server.hpp"
+#include "Channel.hpp"
 
 class Server;
+
+class Channel;
 
 class Client 
 {
@@ -35,11 +40,13 @@ class Client
 		bool pass_ok;
 		bool nick_ok;
 		bool invisible;
-		Server *server;
-		std::string buffer; 
+		std::string buffer;
+		std::vector<std::string> channelInvitations;
+		std::vector<std::string> client_channels;
+
 
 	public:
-		Client(int fd, Server* Server);
+		Client(int fd);
 		~Client();
 
 		int getSocketFd() const;
@@ -76,6 +83,13 @@ class Client
 		bool isBufferEmpty() const;
 		std::string getCompleteLine();
 		bool hasCompleteLine() const;
+		void addChannelInvitation(const std::string& channelName);
+    	bool isInvitedToChannel(const std::string& channelName) const;
+		void addChannel(const std::string& channelName);
+		void removeChannel(const std::string& channelName);
+		void clearChannels();
+		const std::vector<std::string>& getChannels() const;
+		
 	};
 
 #endif

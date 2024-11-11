@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:10:39 by xav               #+#    #+#             */
-/*   Updated: 2024/11/07 14:57:21 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 12:52:20 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,15 @@ class Channel
         std::string name;
         std::map<std::string, int> clients; // Map nickname -> client_fd
         std::map<std::string, int> operators; // Map nickname -> client_fd
+		bool _invited;
+		std::string _key;
+		bool _keyNeeded;
+		bool _limit;
+		size_t _limitValue;
+		std::string _topic;
+		bool _topicRight;
+		std::string _topicOpe;
+		time_t _topicTime;
     public:
         Channel(const std::string &channelName);
         ~Channel();
@@ -41,6 +50,27 @@ class Channel
 		void removeOperator(const std::string &nickname);
 		bool isEmpty() const;
 		int count() const;
+		void setInvited(bool invited);
+		bool getInvited() const;
+		void setKey(std::string key);
+		std::string getKey() const;
+		bool getKeyNeeded() const;
+		void setKeyNeeded(bool keyNeeded);
+		size_t getLimitValue() const;
+		void setLimitValue(size_t limitValue);
+		void setLimit(bool limit);
+		bool getLimit() const;
+		std::string getTopic() const;
+		std::string getTopicOpe() const; 
+		time_t getTopicTime() const; 
+		bool getTopicRight() const; 
+		void setTopic(std::string topic);
+		void setTopicOpe(std::string topicOpe); 
+		void setTopicTime(time_t topicTime); 
+		void setTopicRight(bool topicRight);
+		bool hasOperators() const;
+		void promoteNextOperator(int client_fd);
+				
 };
 
 #endif

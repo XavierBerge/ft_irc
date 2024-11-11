@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:00 by xav               #+#    #+#             */
-/*   Updated: 2024/11/06 16:16:41 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/11 12:59:49 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,10 +132,8 @@ void Server::run()
         if (poll_count < 0) 
 		{
             if (errno == EINTR) 
-			{
-                // Si poll est interrompu par un signal, sortir de la boucle
-                break;
-            } else 
+                break; // Si poll est interrompu par un signal, sortir de la boucle
+			else 
 			{
                 perror("poll");
                 exit(EXIT_FAILURE);
@@ -172,6 +170,7 @@ void Server::run()
 	}
 	channels.clear();
 
+    std::cout << "\nSignal received." << std::endl;
     // Fermer tous les sockets des clients et libérer la mémoire associée
     for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
 	{
@@ -186,40 +185,7 @@ void Server::run()
         close(server_fd);
     }
 
-    std::cout << "\nSignal received." << std::endl;
 }
-/*
-void Server::handleJoinCommand(int client_fd, const std::string &channelName) 
-{
-    if (channelName.empty()) 
-    {
-        clients[client_fd]->sendToClient("461 " + clients[client_fd]->getNickname() + " JOIN :Not enough parameters\r\n");
-        return;
-    }
-	bool first_to_join = false;
-    if (channels.find(channelName) == channels.end()) 
-    {
-        // Créer un nouveau channel s'il n'existe pas
-        channels[channelName] = new Channel(channelName, *this);
-        std::cout << "Channel " << channelName << " créé." << std::endl;
-		first_to_join = true;
-    }
-
-    Channel *channel = channels[channelName];
-    if (channel->addClient(client_fd)) 
-    {
-        std::string joinMessage = ":" + clients[client_fd]->getNickname() + " JOIN " + channelName + "\r\n";
-        channel->broadcastMessage(joinMessage, client_fd);
-        clients[client_fd]->sendToClient("Vous avez rejoint " + channelName + "\r\n");
-		if (first_to_join)
-			channel->promoteToOperator(client_fd);
-    } 
-    else 
-    {
-        clients[client_fd]->sendToClient("Vous êtes déjà dans " + channelName + "\r\n");
-    }
-}
-*/
 
 void Server::close_connection(int client_fd)
 {
@@ -229,7 +195,8 @@ void Server::close_connection(int client_fd)
     clients.erase(client_fd);
 }
 
-void Server::handle_client_data(int client_fd) {
+void Server::handle_client_data(int client_fd) 
+{
     Client *client = clients[client_fd];
     char tempBuffer[1024];
     memset(tempBuffer, 0, sizeof(tempBuffer));
@@ -237,11 +204,14 @@ void Server::handle_client_data(int client_fd) {
     // Lire les données envoyées par le client
     ssize_t bytes_received = client->readFromClient(tempBuffer, sizeof(tempBuffer));
 
-    if (bytes_received <= 0) {
+    if (bytes_received <= 0) 
+	{
         // Gestion de la déconnexion ou de l'erreur
         if (bytes_received == 0) {
             std::cout << "Client " << client_fd << " shut down the connection." << std::endl;
-        } else {
+        } 
+		else 
+		{
             perror("recv");
         }
         close_connection(client_fd);
@@ -249,7 +219,8 @@ void Server::handle_client_data(int client_fd) {
     }
 
     // Tant qu'il y a une ligne complète à traiter dans le buffer
-    while (client->hasCompleteLine()) {
+    while (client->hasCompleteLine()) 
+	{
         // Récupérer et traiter la première ligne complète
         std::string command = client->getCompleteLine();
         
@@ -257,11 +228,13 @@ void Server::handle_client_data(int client_fd) {
         command.erase(command.find_last_not_of("\r\n") + 1);
 
         // Gérer la commande
-        if (!client->isAuthenticated()) {
+        if (!client->isAuthenticated()) 
             handle_authentication(client_fd, command);
-        } else {
+		else 
+		{
             handleCommand(client_fd, command);
-            if (command.find("/quit") == 0) {
+            if (command.find("/quit") == 0) 
+			{
                 close_connection(client_fd);
                 return;
             }
@@ -278,3 +251,41 @@ void Server::SignalHandler(int signum)
 }
 
 
+void Server::removeClientFromAllChannels(int client_fd) 
+{
+    Client* client = clients[client_fd];
+    if (!client) return;
+
+    std::string nickname = client->getNickname();
+    const std::vector<std::string>& clientChannels = client->getChannels();
+
+   	std::vector<std::string>::const_iterator it;
+    for (it = clientChannels.begin(); it != clientChannels.end(); ++it) 
+	{
+        const std::string& channelName = *it;
+
+        Channel* channel = channels[channelName];
+        if (channel)
+            channel->removeClient(nickname);
+
+        std::string quitMessage = ":" + nickname + "!" + client->getUsername() + "@" + client->getHostname() + " QUIT :Client disconnected\r\n";
+        channel->broadcastMessage(quitMessage, client_fd);
+
+        if (channel->isOperator(nickname)) 
+		{
+            channel->removeOperator(nickname);
+            if (!channel->hasOperators()) 
+			{
+                channel->promoteNextOperator(client_fd);
+            }
+        }
+
+        if (channel->isEmpty()) {
+            delete channel;
+            channels.erase(channelName);
+        }
+    }
+
+
+    client->clearChannels();
+}

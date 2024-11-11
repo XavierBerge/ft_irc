@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 13:02:38 by xav               #+#    #+#             */
-/*   Updated: 2024/11/07 16:46:09 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/10 15:20:38 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,7 @@ void Server::handle_new_connection()
     }
 
     // Ajouter le client dans la liste des clients connectés
-    Client *new_client = new Client(client_fd, this);
+    Client *new_client = new Client(client_fd);
     clients[client_fd] = new_client;
 
     // Ajouter le descripteur du client à poll() pour surveiller les événements d'E/S
