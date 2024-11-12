@@ -25,7 +25,7 @@ void Server::handlePrivmsg(int client_fd, const std::string& command)
 
     // Vérifie si `msg` commence déjà par `:`
     if (msg[0] != ':')
-        msg = ":" + msg;
+        msg = ": " + msg;
 
     // Vérifie si `chOrNick` est un canal
     if (channels.find(chOrNick) != channels.end()) 

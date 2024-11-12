@@ -220,9 +220,7 @@ void Server::handle_client_data(int client_fd)
     {
         // Handle disconnection or error
         if (bytes_received == 0) 
-		{
-            std::cout << "Client " << client_fd << " shut down the connection." << std::endl;
-        } 
+            std::cout << RED "Client " << client_fd << " shut down the connection." << RESET << std::endl;
         else 
             perror("recv");
         close_connection(client_fd);

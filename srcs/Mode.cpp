@@ -284,7 +284,7 @@ void Server::handleModePlusT(int client_fd, const std::string& command)
         return;
     }
     channel->setTopicRight(true);
-    std::string response = "MODE " + channelName + " +t\r\n";
+    std::string response = ":" + clients[client_fd]->getNickname() + " MODE " + channelName + " +t\r\n";
     channel->broadcastMessage(response);
 }
 
@@ -302,6 +302,6 @@ void Server::handleModeMinusT(int client_fd, const std::string& command)
         return;
     }
     channel->setTopicRight(false);
-    std::string response = "MODE " + channelName + " -t\r\n";
+    std::string response = ":" + clients[client_fd]->getNickname() + " MODE " + channelName + " -t\r\n";
     channel->broadcastMessage(response);
 }

@@ -27,17 +27,20 @@ void Server::handleKick(int client_fd, const std::string& command)
     Channel *channel = channels[channelName];
     std::string nickname = clients[client_fd]->getNickname();
 	
-    if (!channel->isOperator(nickname)) 
+   if (!channel->isOperator(nickname)) 
 	{
-        clients[client_fd]->sendToClient("482 " + nickname + " " + channelName + " :You're not channel operator\r\n");
+        std::string errorMsg = ":" + servername + " NOTICE " + clients[client_fd]->getNickname() + " :You're not a channel operator for " + channelName + "\r\n";
+        clients[client_fd]->sendToClient(errorMsg);
         return;
     }
 
     if (!channel->isClientInChannel(targetNickname)) 
-	{
-        clients[client_fd]->sendToClient("441 " + nickname + " " + channelName + " " + targetNickname + " :They aren't on that channel\r\n");
-        return;
+    {
+        std::string errorMsg = ":" + servername + " 441 " + nickname + " " + targetNickname + " " + channelName + " :Client is not on that channel\r\n";
+        clients[client_fd]->sendToClient(errorMsg);
+    return;
     }
+
 
     Client* targetClient = NULL;
     for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
