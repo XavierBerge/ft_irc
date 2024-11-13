@@ -42,9 +42,9 @@ class Channel;
 class Server 
 {
 	private:
-		int server_fd;  // Socket du serveur
-		std::map<int, Client*> clients;  // Mapping des descripteurs de fichiers à chaque client
-		std::vector<struct pollfd> poll_fds;  // Liste des sockets surveillés par poll()
+		int server_fd;  // Socket servor
+		std::map<int, Client*> clients;  // FD map for clients;
+		std::vector<struct pollfd> poll_fds;  // List of sockets watched by poll
 		std::map<std::string, Channel*> channels;
 		std::string password;
 		std::string hostname;

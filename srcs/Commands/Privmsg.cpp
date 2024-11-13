@@ -19,20 +19,18 @@ void Server::handlePrivmsg(int client_fd, const std::string& command)
     iss >> cmd >> chOrNick;
     std::getline(iss, msg);
 
-    // Supprime le premier espace de `msg` s'il existe
     if (!msg.empty() && msg[0] == ' ') 
         msg = msg.substr(1);  
-
-    // Vérifie si `msg` commence déjà par `:`
+`
     if (msg[0] != ':')
         msg = ": " + msg;
 
-    // Vérifie si `chOrNick` est un canal
+    // channel part privmsg
     if (channels.find(chOrNick) != channels.end()) 
     {
         Channel *channel = channels[chOrNick];
 
-        // Vérifie que le client est bien membre du channel
+        
         std::string nickname = clients[client_fd]->getNickname();
         if (!channel->isClientInChannel(nickname)) 
         {
@@ -49,10 +47,9 @@ void Server::handlePrivmsg(int client_fd, const std::string& command)
         else 
             clients[client_fd]->sendToClient("412 " + nickname + " :No text to send\r\n");
     } 
-    // Sinon, on traite `chOrNick` comme un nickname pour un message privé
+    // Usert part privmsg
     else 
     {
-        // Recherche le client avec le nickname spécifié
         Client* targetClient = NULL;
         for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
         {

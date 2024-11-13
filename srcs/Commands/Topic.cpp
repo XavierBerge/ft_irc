@@ -28,19 +28,18 @@ void Server::handleTopic(int client_fd, const std::string& command)
     Channel* channel = channels[channelName];
     std::getline(iss, newTopic);
 	
-    // Supprimer tous les caractères `:` au début, puis les espaces blancs
+    // Get rid all of : and whitespaces
     size_t pos = newTopic.find_first_of(":"); 
-    if (pos != std::string::npos) {
-        newTopic = newTopic.substr(pos + 1);  // Ignorer tout avant (et y compris) le premier ':'
-    }
+    if (pos != std::string::npos)
+        newTopic = newTopic.substr(pos + 1);  // Ignore all whitespaces before first :
 
-    // Supprimer les `:` restants au début de la chaîne
+    // Get rid all of :
     while (!newTopic.empty() && newTopic[0] == ':') 
 	{
         newTopic = newTopic.substr(1);
     }
 
-    // Supprimer les espaces blancs au début et à la fin
+    // Remove all whitespaces at the start and the end
     size_t start = newTopic.find_first_not_of(" \t");
     size_t end = newTopic.find_last_not_of(" \t");
     newTopic = (start == std::string::npos) ? "" : newTopic.substr(start, end - start + 1);
@@ -52,7 +51,7 @@ void Server::handleTopic(int client_fd, const std::string& command)
             clients[client_fd]->sendToClient(":" + servername + " 332 " + clients[client_fd]->getNickname() + " " + channelName + " :" + channel->getTopic() + "\r\n");
             
             std::ostringstream oss;
-            oss << channel->getTopicTime();  // Convertit le timestamp en string avec un ostringstream
+            oss << channel->getTopicTime(); 
             clients[client_fd]->sendToClient(":" + servername + " 333 " + clients[client_fd]->getNickname() + " " + channelName + " " + channel->getTopicOpe() + " " + oss.str() + "\r\n");
         } 
 		else 

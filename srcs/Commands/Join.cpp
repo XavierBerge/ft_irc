@@ -15,15 +15,14 @@
 
 void Server::handleJoin(int client_fd, const std::string& command) 
 {
-    // Extraire le nom du canal et le mot de passe si fourni
     size_t spacePos = command.find(" ");
-    std::string channelName = command.substr(5, spacePos - 5);  // Extrait le nom du canal après "JOIN "
+    std::string channelName = command.substr(5, spacePos - 5);  
     std::string password;
     
     if (spacePos != std::string::npos)
-        password = command.substr(spacePos + 1);  // Mot de passe facultatif
+        password = command.substr(spacePos + 1);  // Get password if password
 
-    // Trim des espaces du début et de la fin
+    // Remove whitespaces at start and end
     size_t start = 0;
     while (start < channelName.size() && isspace(channelName[start])) 
         ++start;
@@ -48,21 +47,21 @@ void Server::handleJoin(int client_fd, const std::string& command)
     Channel *channel = channels[channelName];
     std::string nickname = clients[client_fd]->getNickname();
 
-    // Vérification du mode invitation
+    
     if (channel->getInvited() && !clients[client_fd]->isInvitedToChannel(channelName)) 
 	{
         clients[client_fd]->sendToClient("473 " + nickname + " " + channelName + " :Cannot join channel (invite only)\r\n");
         return;
     }
 
-    // Vérification du mot de passe
+    
     if (channel->getKeyNeeded() && (password.empty() || password != channel->getKey())) 
 	{
         clients[client_fd]->sendToClient("475 " + nickname + " " + channelName + " :Cannot join channel (incorrect channel key)\r\n");
         return;
     }
 
-    // Ajouter le client au canal
+    
     if (channel->addClient(nickname, client_fd)) 
 	{
 		clients[client_fd]->addChannel(channelName);
@@ -74,14 +73,13 @@ void Server::handleJoin(int client_fd, const std::string& command)
 
         if (firstToJoin) 
 		{
-            // Si le client est le premier à rejoindre, il devient opérateur
             channel->promoteToOperator(nickname, client_fd);
             std::string modemsg = ":" + servername + " MODE " + channelName + " +o " + nickname + "\r\n";
             channel->broadcastMessage(modemsg);
         }
 
         if (!firstToJoin)
-            sendChannelTopic(client_fd, channel);  // Envoie le sujet du canal si existant
+            sendChannelTopic(client_fd, channel);  // Send topic if a topic is set
     } 
     else 
         clients[client_fd]->sendToClient("You already joined " + channelName + "\r\n");

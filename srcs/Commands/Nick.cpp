@@ -17,7 +17,7 @@ void Server::handleNick(int client_fd, const std::string& command)
     Client* client = clients[client_fd];
 
 
-    // Vérifier si le client a passé le mot de passe
+
     if (!client->isPass_Ok()) 
 	{
         std::string error = "You must enter the server password before choosing a nickname : PASS <password>.\r\n";
@@ -28,7 +28,7 @@ void Server::handleNick(int client_fd, const std::string& command)
 
     std::string nickname = command.substr(5);
 
-    // Vérifier l'unicité du nickname
+    // Check if nickname is unique 
     bool nickname_taken = false;
     for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
 	{
