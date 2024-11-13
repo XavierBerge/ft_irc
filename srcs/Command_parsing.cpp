@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 15:24:34 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 20:37:31 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/12 21:45:26 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,7 +95,8 @@ void Server::handleMode(int client_fd, const std::string& command)
 
     if (!channelObj->isOperator(clients[client_fd]->getNickname())) 
     {
-        clients[client_fd]->sendToClient("481 " + clients[client_fd]->getNickname() + " :Permission denied\r\n");
+        std::string errorMsg = ":" + servername + " 482 " + clients[client_fd]->getNickname() + " :You're not a channel operator for " + channel + "\r\n";
+        clients[client_fd]->sendToClient(errorMsg);
         return;
     }
 

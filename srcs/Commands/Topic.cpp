@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/11 16:56:32 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 16:57:15 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/12 21:34:08 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,8 @@ void Server::handleTopic(int client_fd, const std::string& command)
 
     if (channel->getTopicRight() && !channel->isOperator(clients[client_fd]->getNickname())) 
 	{
-        clients[client_fd]->sendToClient(":" + servername + " 482 " + clients[client_fd]->getNickname() + " " + channelName + " :You're not channel operator\r\n");
+		std::string errorMsg = ":" + servername + " 482 " + clients[client_fd]->getNickname() + " :You're not a channel operator for " + channelName + "\r\n";
+        clients[client_fd]->sendToClient(errorMsg);
         return;
     }
     channel->setTopic(newTopic);

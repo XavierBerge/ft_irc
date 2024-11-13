@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/03 13:11:00 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 20:47:33 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/12 21:49:10 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -209,11 +209,12 @@ void Server::close_connection(int client_fd)
 
 void Server::handle_client_data(int client_fd) 
 {
+	if (clients.find(client_fd) == clients.end())
+		return ;
     Client *client = clients[client_fd];
     char tempBuffer[1024];
     memset(tempBuffer, 0, sizeof(tempBuffer));
 
-    // Read data sent by the client
     ssize_t bytes_received = client->readFromClient(tempBuffer, sizeof(tempBuffer));
 
     if (bytes_received <= 0) 
@@ -248,6 +249,8 @@ void Server::handle_client_data(int client_fd)
                 return;
             }
         }
+		if (clients.find(client_fd) == clients.end())
+        	return;
     }
 }
 
@@ -287,7 +290,8 @@ void Server::removeClientFromAllChannels(int client_fd)
             }
         }
 
-        if (channel->isEmpty()) {
+        if (channel->isEmpty()) 
+		{
             delete channel;
             channels.erase(channelName);
         }

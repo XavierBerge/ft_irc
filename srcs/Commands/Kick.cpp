@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/11 17:02:31 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 17:02:57 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/12 20:14:59 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,21 +27,6 @@ void Server::handleKick(int client_fd, const std::string& command)
     Channel *channel = channels[channelName];
     std::string nickname = clients[client_fd]->getNickname();
 	
-   if (!channel->isOperator(nickname)) 
-	{
-        std::string errorMsg = ":" + servername + " NOTICE " + clients[client_fd]->getNickname() + " :You're not a channel operator for " + channelName + "\r\n";
-        clients[client_fd]->sendToClient(errorMsg);
-        return;
-    }
-
-    if (!channel->isClientInChannel(targetNickname)) 
-    {
-        std::string errorMsg = ":" + servername + " 441 " + nickname + " " + targetNickname + " " + channelName + " :Client is not on that channel\r\n";
-        clients[client_fd]->sendToClient(errorMsg);
-    return;
-    }
-
-
     Client* targetClient = NULL;
     for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) 
     {
@@ -56,6 +41,21 @@ void Server::handleKick(int client_fd, const std::string& command)
         clients[client_fd]->sendToClient("401 " + nickname + " " + targetNickname + " :No such nick/channel\r\n");
         return;
     }
+   if (!channel->isOperator(nickname)) 
+	{
+        std::string errorMsg = ":" + servername + " 482 " + clients[client_fd]->getNickname() + " :You're not a channel operator for " + channelName + "\r\n";
+        clients[client_fd]->sendToClient(errorMsg);
+        return;
+    }
+
+    if (!channel->isClientInChannel(targetNickname)) 
+    {
+        std::string errorMsg = ":" + servername + " 441 " + nickname + " " + targetNickname + " " + channelName + " :Client is not on that channel\r\n";
+        clients[client_fd]->sendToClient(errorMsg);
+    return;
+    }
+
+
 
     std::string kickMessage = ":" + nickname + "!" + clients[client_fd]->getUsername() + "@" + clients[client_fd]->getHostname() + " KICK " + channelName + " " + targetNickname + "\r\n";
     channel->broadcastMessage(kickMessage);

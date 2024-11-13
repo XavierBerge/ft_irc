@@ -6,7 +6,7 @@
 /*   By: xav <xav@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/11 16:55:08 by xav               #+#    #+#             */
-/*   Updated: 2024/11/11 17:09:54 by xav              ###   ########.fr       */
+/*   Updated: 2024/11/12 21:50:51 by xav              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,10 +47,14 @@ void Server::handlePart(int client_fd, const std::string& command)
         return;
     }
 
-    if (channel->isOperator(nickname)) 
-        channel->removeOperator(nickname);
-
     channel->removeClient(nickname);
+    if (channel->isOperator(nickname))
+	{
+        channel->removeOperator(nickname);
+		if (!channel->hasOperators()) 
+            channel->promoteNextOperator(client_fd);
+	} 
+
     std::string fullPartMessage = ":" + clients[client_fd]->getNickname() + " PART " + channelName;
     if (!partMessage.empty()) 
     {
@@ -68,4 +72,5 @@ void Server::handlePart(int client_fd, const std::string& command)
         delete channel;
         channels.erase(channelName);
     }
+
 }
