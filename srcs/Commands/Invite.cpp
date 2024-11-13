@@ -36,7 +36,8 @@ void Server::handleInvite(int client_fd, const std::string& command)
 
     if (!channel->isOperator(inviterNickname)) 
     {
-        clients[client_fd]->sendToClient("482 " + inviterNickname + " " + channelName + " :You're not channel operator\r\n");
+        std::string errorMsg = ":" + servername + " 482 " + clients[client_fd]->getNickname() + " :You're not a channel operator for " + channelName + "\r\n";
+        clients[client_fd]->sendToClient(errorMsg);
         return;
     }
 
@@ -61,7 +62,14 @@ void Server::handleInvite(int client_fd, const std::string& command)
         clients[client_fd]->sendToClient("443 " + inviterNickname + " " + targetNickname + " " + channelName + " :is already on channel\r\n");
         return;
     }
+
     targetClient->addChannelInvitation(channelName);
     clients[client_fd]->sendToClient("341 " + inviterNickname + " " + targetNickname + " " + channelName + "\r\n");
-    targetClient->sendToClient(":" + inviterNickname + " INVITE " + targetNickname + " :" + channelName + "\r\n");
+    std::string inviteMessage = ":" + inviterNickname + " INVITE " + targetNickname + " :" + channelName;
+    if (channel->getKeyNeeded()) 
+    {
+        inviteMessage += " (Password: " + channel->getKey() + ")";
+    }
+    inviteMessage += "\r\n";
+    targetClient->sendToClient(inviteMessage);
 }
